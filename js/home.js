@@ -41,17 +41,15 @@
      * por defecto de los ajustes.
      */
     /*
-     * El patron de Panama son turnos de 12 horas (06:00-18:00 y 18:00-06:00),
-     * que es lo que dice su propia configuracion. HORARIOS son los de 8 horas
-     * del turno por defecto. Mapear uno al otro hacia que el inicio anunciara
-     * "Day Shift 0700-1500" mientras el calendario de Panama decia 06:00-18:00,
-     * y la cuenta atras del turno salia con el horario que no era.
-     */
-    /*
-     * Los turnos de Panama en Ft. Buchanan son de 13 horas, no de 12: se
-     * entra media hora antes del relevo y se sale media hora despues, y de
-     * esas 13 una va como overtime. De ahi el solape entre el fin del de dia
-     * (1830) y el inicio del de noche (1730).
+     * Turnos de Panama en Ft. Buchanan: 13 horas, no 12. Se entra media hora
+     * antes del relevo y se sale media hora despues, y de esas 13 una va como
+     * overtime. De ahi el solape entre el fin del de dia (1830) y el inicio
+     * del de noche (1730).
+     *
+     * HORARIOS, mas arriba, son los de 8 horas del turno por defecto: se usan
+     * solo cuando no hay patron de Panama configurado. Mezclarlos hacia que el
+     * inicio anunciara "Day Shift 0700-1500" y que la cuenta atras saliera con
+     * el horario que no era.
      */
     const PANAMA = {
         day:   { ini: 5.5 * 60,  fin: 18.5 * 60, etiqueta: 'Day Shift',   rango: '0530-1830' },
