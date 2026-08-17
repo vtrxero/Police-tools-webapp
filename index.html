@@ -297,22 +297,61 @@
             <div class="sheet">
                 <div class="sheet-handle"></div>
                 <h3>New document</h3>
+                <!-- Los iconos son los mismos glifos que las tarjetas de
+                     TOOLS & RESOURCES, para que el mismo documento se
+                     reconozca igual desde los dos sitios. -->
                 <div class="sheet-list">
                     <button class="sheet-item" data-new="patrol-log">
-                        <span class="si-ic patrol"></span>
+                        <span class="si-ic patrol">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </span>
                         <span class="si-text"><b>Patrol Log</b><em>Activity log for the shift</em></span>
+                        <svg class="si-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="m9 18 6-6-6-6"></path>
+                        </svg>
                     </button>
                     <button class="sheet-item" data-new="pmcs">
-                        <span class="si-ic pmcs"></span>
+                        <span class="si-ic pmcs">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
+                                <circle cx="6.5" cy="16.5" r="2.5"></circle>
+                                <circle cx="16.5" cy="16.5" r="2.5"></circle>
+                            </svg>
+                        </span>
                         <span class="si-text"><b>PMCS</b><em>Vehicle inspection</em></span>
+                        <svg class="si-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="m9 18 6-6-6-6"></path>
+                        </svg>
                     </button>
                     <button class="sheet-item" data-new="guard-mount">
-                        <span class="si-ic guard"></span>
+                        <span class="si-ic guard">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </span>
                         <span class="si-text"><b>Guard Mount</b><em>Personnel roster</em></span>
+                        <svg class="si-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="m9 18 6-6-6-6"></path>
+                        </svg>
                     </button>
                     <button class="sheet-item" data-new="interview">
-                        <span class="si-ic interview"></span>
+                        <span class="si-ic interview">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </span>
                         <span class="si-text"><b>Interview</b><em>Worksheet form</em></span>
+                        <svg class="si-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="m9 18 6-6-6-6"></path>
+                        </svg>
                     </button>
                 </div>
                 <button class="sheet-cancel" id="new-sheet-cancel">Cancel</button>

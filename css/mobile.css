@@ -736,17 +736,58 @@ body.keyboard-open .bottom-nav {
     opacity: 0.85;
 }
 
+/* Iconos de la hoja: mismo tratamiento que las tarjetas del inicio.
+   Eran cuadrados de color plano, sin nada dentro: un bloque azul saturado
+   no dice cual de los cuatro documentos es, hay que leer el texto. Ahora el
+   fondo es el color atenuado y el glifo lleva el color entero, que es como
+   se ven los mismos documentos en TOOLS & RESOURCES. */
 .si-ic {
-    width: 38px;
-    height: 38px;
-    border-radius: 11px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.si-ic.patrol    { background: var(--accent-blue); }
-.si-ic.pmcs      { background: var(--accent-green); }
-.si-ic.guard     { background: var(--accent-red); }
-.si-ic.interview { background: var(--accent-yellow); }
+.si-ic svg {
+    width: 21px;
+    height: 21px;
+}
+
+.si-ic.patrol {
+    background: rgba(59, 130, 246, 0.16);
+    color: var(--accent-blue);
+}
+
+.si-ic.pmcs {
+    background: rgba(16, 185, 129, 0.16);
+    color: var(--accent-green);
+}
+
+.si-ic.guard {
+    background: rgba(239, 68, 68, 0.16);
+    color: var(--accent-red);
+}
+
+.si-ic.interview {
+    background: rgba(245, 158, 11, 0.18);
+    color: var(--accent-yellow);
+}
+
+/* El texto se queda con el hueco que sobra y la flecha va al final */
+.si-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.si-go {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
 
 .si-text b {
     display: block;
@@ -767,7 +808,9 @@ body.keyboard-open .bottom-nav {
     margin-top: 4px;
     border: none;
     border-radius: 14px;
-    background: var(--bg-secondary);
+    /* Misma superficie que las filas. Con --bg-secondary quedaba blanco sobre
+       el blanco de la hoja en los temas claros: el boton no se veia. */
+    background: var(--bg-primary);
     color: var(--text-secondary);
     font-size: 0.95rem;
     font-weight: 600;

@@ -271,12 +271,17 @@
     --shadow-hover: 0 0 0 2px #000000;
 }
 
-/* A pleno sol los bordes se leen mejor que las sombras */
+/* A pleno sol los bordes se leen mejor que las sombras.
+   En este tema todas las superficies son blancas, asi que sin borde una
+   tarjeta sobre la hoja no se distingue del fondo: la hoja del boton +
+   quedaba con las filas y el Cancel invisibles. */
 [data-theme="highnoon"] .menu-card,
 [data-theme="highnoon"] .document-card,
 [data-theme="highnoon"] .saved-entry-card,
 [data-theme="highnoon"] .form-section,
-[data-theme="highnoon"] .law-item {
+[data-theme="highnoon"] .law-item,
+[data-theme="highnoon"] .sheet-item,
+[data-theme="highnoon"] .sheet-cancel {
     border: 2px solid #000000;
 }
 
@@ -478,6 +483,16 @@
    ============================================ */
 [data-theme="nightops"] .menu-card[data-tab] .card-icon {
     background: linear-gradient(135deg, rgba(217, 79, 61, 0.18), rgba(217, 79, 61, 0.08));
+    color: #d97a68;
+}
+
+/* La hoja del boton + trae los cuatro colores de los documentos. Cuatro
+   puntos brillantes de golpe son justo lo que este tema evita.
+
+   Hace falta .sheet delante: las reglas de color viven en mobile.css, que se
+   carga despues de este archivo, y a igual especificidad gana la ultima. */
+[data-theme="nightops"] .sheet .si-ic {
+    background: rgba(217, 79, 61, 0.16);
     color: #d97a68;
 }
 
