@@ -596,3 +596,65 @@
 .shift-card[hidden] {
     display: none !important;
 }
+
+/* ============================================
+   FOTO DE CABECERA POR TEMA
+   Cada paleta lleva la imagen que le pega, y con la opacidad ajustada al
+   fondo: sobre un fondo claro la misma foto resulta demasiado pesada.
+   ============================================ */
+:root,
+[data-theme="midnight"] {
+    --hero-image: url('../assets/hero/skyline-blue.webp');
+    --hero-opacity: 0.9;
+}
+
+[data-theme="carbon"] {
+    --hero-image: url('../assets/hero/skyline-blue.webp');
+    --hero-opacity: 0.55;
+}
+
+[data-theme="forest"],
+[data-theme="tactical"] {
+    --hero-image: url('../assets/hero/skyline-sunset.webp');
+    --hero-opacity: 0.55;
+}
+
+[data-theme="daylight"],
+[data-theme="paper"] {
+    --hero-image: url('../assets/hero/skyline-violet.webp');
+    --hero-opacity: 0.42;
+}
+
+/* High Noon busca contraste maximo a pleno sol: una foto de fondo solo
+   le resta legibilidad. */
+[data-theme="highnoon"] {
+    --hero-image: none;
+}
+
+/* ============================================
+   NIGHT OPS: LA FOTO, MUY ATENUADA Y EN ROJO
+   Es una imagen nocturna con luces azules y blancas, o sea una fuente de
+   luz justo de la gama que arruina la adaptacion a la oscuridad. Se deja
+   como textura de fondo, apagada y llevada al rojo.
+   ============================================ */
+[data-theme="nightops"] {
+    --hero-image: url('../assets/hero/skyline-sunset.webp');
+    --hero-opacity: 0.22;
+}
+
+[data-theme="nightops"] .hs-hero-photo {
+    filter: sepia(1) saturate(2.6) hue-rotate(-34deg) brightness(0.5) contrast(1.1);
+}
+
+/* Los temas claros necesitan que la foto no se coma el texto */
+[data-theme="daylight"] .hs-hero-photo,
+[data-theme="paper"] .hs-hero-photo {
+    -webkit-mask-image: linear-gradient(100deg, transparent 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.85) 85%);
+    mask-image: linear-gradient(100deg, transparent 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.85) 85%);
+}
+
+[data-theme="daylight"] .hs-date,
+[data-theme="paper"] .hs-date,
+[data-theme="highnoon"] .hs-date {
+    text-shadow: none;
+}

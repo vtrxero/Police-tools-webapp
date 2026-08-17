@@ -1,0 +1,574 @@
+/* ============================================
+   POLICE TOOLS - PANTALLA DE INICIO
+   Disposicion basada en la maqueta: barra de turno, tarjeta principal con
+   la cuenta atras, aviso de borrador, tres fichas de estado con anillo de
+   progreso y la rejilla de herramientas en tres columnas.
+   ============================================ */
+
+.home-status {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+    margin: 0 0 var(--s4);
+}
+
+/* ============================================
+   1. BARRA DE TURNO
+   ============================================ */
+.hs-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: var(--s3) var(--s3) var(--s3) var(--s4);
+    border: var(--hairline);
+    border-radius: var(--r-md);
+    background: var(--bg-card);
+}
+
+.hs-live {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.hs-live.on {
+    background: var(--accent-green);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-green) 22%, transparent);
+}
+
+.hs-bar-shift {
+    font-size: var(--t-meta);
+    font-weight: 650;
+    color: var(--accent-green);
+    white-space: nowrap;
+}
+
+.hs-bar-sep {
+    width: 1px;
+    height: 15px;
+    background: rgba(128, 128, 128, 0.28);
+    flex-shrink: 0;
+}
+
+.hs-bar-state {
+    font-size: var(--t-meta);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.hs-schedule {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 12px;
+    border: var(--hairline);
+    border-radius: 20px;
+    background: none;
+    color: var(--brand);
+    font-family: inherit;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+}
+
+.hs-schedule svg {
+    width: 14px;
+    height: 14px;
+}
+
+.hs-schedule:active {
+    transform: scale(0.95);
+}
+
+/* En pantallas estrechas el texto de estado sobra antes que el boton */
+@media (max-width: 380px) {
+    .hs-bar-sep,
+    .hs-bar-state { display: none; }
+}
+
+/* ============================================
+   2. TARJETA PRINCIPAL
+   ============================================ */
+.hs-hero {
+    position: relative;
+    overflow: hidden;
+    border: var(--hairline);
+    border-radius: var(--r-lg);
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+}
+
+/* La foto va a la derecha y se funde con la tarjeta, para que no compita
+   con el texto ni forme un borde duro */
+.hs-hero-photo {
+    position: absolute;
+    inset: 0 0 auto auto;
+    width: 62%;
+    height: 100%;
+    background-image: var(--hero-image, none);
+    background-size: cover;
+    background-position: center right;
+    opacity: var(--hero-opacity, 0.85);
+    -webkit-mask-image: linear-gradient(100deg, transparent 0%, rgba(0,0,0,0.5) 32%, #000 78%);
+    mask-image: linear-gradient(100deg, transparent 0%, rgba(0,0,0,0.5) 32%, #000 78%);
+    pointer-events: none;
+}
+
+.hs-hero-head {
+    position: relative;
+    padding: var(--s5) var(--s4) var(--s4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+}
+
+.hs-eyebrow {
+    font-size: var(--t-label);
+    font-weight: 750;
+    letter-spacing: 0.1em;
+    color: var(--brand);
+}
+
+.hs-date {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: var(--text-primary);
+    /* Sobre la foto hace falta separar el texto del fondo */
+    text-shadow: 0 1px 12px var(--bg-card);
+}
+
+.hs-hero-foot {
+    position: relative;
+    padding: var(--s3) var(--s4) var(--s4);
+    border-top: var(--hairline);
+    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+}
+
+.hs-hero-foot .hs-label {
+    font-size: var(--t-label);
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    color: var(--text-secondary);
+}
+
+.hs-hero-row {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--s4);
+}
+
+.hs-hero-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.hs-hero-cell + .hs-hero-cell {
+    padding-left: var(--s4);
+    border-left: var(--hairline);
+}
+
+.hs-hero-cell span {
+    font-size: 0.6875rem;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.hs-hero-cell b {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.hs-hero-cell.accent b {
+    color: var(--brand);
+}
+
+.hs-bar-track {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(128, 128, 128, 0.22);
+    overflow: hidden;
+}
+
+.hs-bar-track i {
+    display: block;
+    height: 100%;
+    background: var(--brand);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.hs-hero-go {
+    position: absolute;
+    right: var(--s4);
+    top: 50%;
+    transform: translateY(-70%);
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.hs-hero-go svg {
+    width: 20px;
+    height: 20px;
+}
+
+.hs-hero-go:active {
+    transform: translateY(-70%) scale(0.92);
+}
+
+/* ============================================
+   3. AVISO DE BORRADOR
+   ============================================ */
+.hs-resume {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    width: 100%;
+    min-height: 64px;
+    padding: var(--s3) var(--s4);
+    border: 1px solid var(--accent-orange);
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--accent-orange) 10%, var(--bg-card));
+    color: var(--text-primary);
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.hs-resume:active {
+    transform: scale(0.99);
+}
+
+.hs-warn {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent-orange);
+    color: #1a1204;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hs-warn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.hs-resume-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.hs-resume-text b {
+    display: block;
+    font-size: var(--t-body);
+    font-weight: 650;
+}
+
+.hs-resume-text em {
+    display: block;
+    font-style: normal;
+    font-size: var(--t-meta);
+    color: var(--text-secondary);
+    margin-top: 1px;
+}
+
+.hs-chev {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+}
+
+/* ============================================
+   4. FICHAS DE ESTADO CON ANILLO
+   ============================================ */
+.hs-docs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s2);
+}
+
+.hs-doc {
+    position: relative;
+    min-height: 76px;
+    padding: var(--s3) var(--s2);
+    border: var(--hairline);
+    border-radius: var(--r-md);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    font-family: inherit;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.hs-doc:active {
+    transform: scale(0.97);
+}
+
+.hs-doc-ic {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(128, 128, 128, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hs-doc-ic svg {
+    width: 16px;
+    height: 16px;
+}
+
+.hs-doc-ic.patrol     { color: var(--accent-blue); }
+.hs-doc-ic.pmcs       { color: var(--accent-green); }
+.hs-doc-ic.guardmount { color: var(--accent-red); }
+
+.hs-doc-txt {
+    min-width: 0;
+    width: 100%;
+}
+
+.hs-doc-txt b {
+    display: block;
+    font-size: var(--t-meta);
+    font-weight: 650;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hs-doc-txt em {
+    display: block;
+    font-style: normal;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Anillo: indica cuanto lleva relleno ese documento */
+.hs-ring {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 22px;
+    height: 22px;
+    transform: rotate(-90deg);
+}
+
+.hs-ring circle {
+    fill: none;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+}
+
+.hs-ring-bg {
+    stroke: rgba(128, 128, 128, 0.22);
+}
+
+.hs-ring-fg  { stroke: currentColor; }
+.hs-ring.patrol     { color: var(--accent-blue); }
+.hs-ring.pmcs       { color: var(--accent-green); }
+.hs-ring.guardmount { color: var(--accent-red); }
+
+.hs-doc.done {
+    border-color: color-mix(in srgb, var(--accent-green) 45%, transparent);
+}
+
+.hs-doc.done .hs-doc-txt em {
+    color: var(--accent-green);
+    font-weight: 600;
+}
+
+@media (max-width: 340px) {
+    .hs-docs { grid-template-columns: 1fr; }
+    .hs-doc { flex-direction: row; align-items: center; min-height: 56px; }
+}
+
+/* ============================================
+   5. HERRAMIENTAS EN TRES COLUMNAS
+   Con la fila de estado arriba, las seis tarjetas en dos columnas
+   obligaban a bajar. En tres caben todas sin scroll.
+   ============================================ */
+.tools-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: var(--s5) 0 var(--s2);
+}
+
+.tools-head h3 {
+    font-size: var(--t-label);
+    font-weight: 750;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+#app .menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s2);
+}
+
+#app .menu-card {
+    padding: var(--s3) var(--s2);
+    gap: 2px;
+}
+
+#app .menu-card .card-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: var(--s2);
+}
+
+#app .menu-card h3 {
+    font-size: var(--t-meta);
+    font-weight: 650;
+    line-height: 1.22;
+}
+
+#app .menu-card p {
+    font-size: 0.6875rem;
+    line-height: 1.28;
+}
+
+@media (max-width: 340px) {
+    #app .menu-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* El chip de turno antiguo lo sustituye .hs-bar; declara display:flex y
+   gana al [hidden] por especificidad. */
+.shift-badge-container[hidden] {
+    display: none !important;
+}
+
+/* "Off shift" se cortaba: el boton no debe encoger, el estado si */
+.hs-bar-state {
+    flex: 1 1 auto;
+}
+
+.hs-bar-shift {
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* El anillo se solapaba con el nombre del documento */
+.hs-doc-txt {
+    padding-right: 26px;
+}
+
+/* ============================================
+   6. BOTON CENTRAL CON ETIQUETA
+   Un "+" a secas no dice que hace. La etiqueta va dentro del circulo:
+   colgada por debajo se salia del alto de la barra.
+   ============================================ */
+.bn-fab {
+    position: relative;
+}
+
+.bn-fab svg {
+    padding: 11px 14px 18px;
+}
+
+.bn-fab-label {
+    position: absolute;
+    left: 50%;
+    top: 30px;
+    transform: translateX(-50%);
+    font-size: 0.5rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #fff;
+    pointer-events: none;
+}
+
+[data-theme="tactical"] .bn-fab-label,
+[data-theme="paper"] .bn-fab-label {
+    color: #14120c;
+}
+
+/* ============================================
+   7. AJUSTES DE ANCHO
+   A 412px de ancho, "Day Shift (0700-1500)" y "You're on shift" no caben
+   junto al boton: los dos quedaban cortados a media palabra.
+   ============================================ */
+.hs-bar {
+    padding-left: var(--s3);
+    gap: 6px;
+}
+
+.hs-bar-shift {
+    font-size: 0.8125rem;
+}
+
+.hs-bar-state {
+    font-size: 0.75rem;
+}
+
+.hs-schedule {
+    font-size: 0.625rem;
+    padding: 0 10px;
+    gap: 5px;
+}
+
+/* Por debajo de 430px el estado se cae antes que el nombre del turno */
+@media (max-width: 430px) {
+    .hs-bar-sep,
+    .hs-bar-state { display: none; }
+    .hs-bar-shift { flex: 1; }
+}
+
+/* "Guard Mount" no cabia en una linea a tres columnas */
+.hs-doc-txt b {
+    white-space: normal;
+    font-size: 0.75rem;
+    line-height: 1.15;
+}
+
+.hs-doc {
+    min-height: 84px;
+}

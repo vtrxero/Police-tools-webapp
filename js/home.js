@@ -110,6 +110,62 @@
     }
 
     // ============================================
+    // PROXIMO TURNO
+    // ============================================
+    /** Fecha y hora en que empieza el proximo turno. */
+    function proximoInicio(turno) {
+        if (!turno || turno.ini === undefined) return null;
+
+        const ahora = new Date();
+        const inicio = new Date(ahora);
+        inicio.setHours(Math.floor(turno.ini / 60), turno.ini % 60, 0, 0);
+
+        // Si la hora de inicio ya paso hoy, el proximo es mañana
+        if (inicio <= ahora) inicio.setDate(inicio.getDate() + 1);
+        return inicio;
+    }
+
+    function cuentaAtras(hasta) {
+        const ms = hasta - Date.now();
+        if (ms <= 0) return null;
+        const min = Math.floor(ms / 60000);
+        const h = Math.floor(min / 60);
+        return h ? `${h}h ${String(min % 60).padStart(2, '0')}m` : `${min}m`;
+    }
+
+    // ============================================
+    // ANILLO DE PROGRESO
+    // ============================================
+    /** Aro SVG que indica cuanto lleva relleno ese documento. */
+    function anillo(fraccion, clase) {
+        const R = 9;
+        const C = 2 * Math.PI * R;
+        const avance = C * Math.max(0, Math.min(1, fraccion));
+        return `
+            <svg class="hs-ring ${clase}" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="${R}" class="hs-ring-bg"></circle>
+                <circle cx="12" cy="12" r="${R}" class="hs-ring-fg"
+                        stroke-dasharray="${avance.toFixed(2)} ${C.toFixed(2)}"></circle>
+            </svg>`;
+    }
+
+    /** Cuanto lleva relleno el formulario de ese tipo, de 0 a 1. */
+    function avanceDe(tipo) {
+        const clave = tipo === 'patrol' ? 'patrol' : tipo;
+        const datos = app()?.formState?.[clave] || {};
+        const escritos = Object.values(datos).filter(v => v && String(v).trim()).length;
+        // Referencia aproximada de campos por documento
+        const total = { patrol: 24, pmcs: 30, guardmount: 12 }[tipo] || 20;
+        return Math.min(1, escritos / total);
+    }
+
+    const ICONOS = {
+        patrol: '<rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>',
+        pmcs: '<path d="M5 17h14l-1.5-5.5a2 2 0 0 0-1.9-1.5H8.4a2 2 0 0 0-1.9 1.5z"></path><circle cx="7.5" cy="17" r="1.6"></circle><circle cx="16.5" cy="17" r="1.6"></circle>',
+        guardmount: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>'
+    };
+
+    // ============================================
     // PINTADO
     // ============================================
     function render() {
@@ -121,71 +177,119 @@
         const hechos = reportesDeHoy();
         const borrador = borradorPendiente();
 
-        // --- Tarjeta de turno ---
-        let html = '';
-
         const hoy = new Date();
         const dias = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const meses = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const fecha = `${dias[hoy.getDay()]} · ${meses[hoy.getMonth()]} ${hoy.getDate()}`;
+        const meses = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
 
-        // Abre el calendario, igual que hacia la flecha de la tarjeta antigua
-        const flecha = `
-            <button type="button" class="hs-cal" data-cal aria-label="Open calendar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"></path>
-                </svg>
-            </button>`;
+        let html = '';
 
-        if (prog) {
-            html += `
-                <div class="hs-shift running">
-                    <div class="hs-main">
-                        <span class="hs-label">${fecha} · ${turno.etiqueta} ${turno.rango}</span>
-                        <b class="hs-big">${prog.texto}</b>
+        // --- Barra de estado del turno ---
+        const enTurno = !!prog;
+        html += `
+            <div class="hs-bar">
+                <span class="hs-live${enTurno ? ' on' : ''}"></span>
+                <b class="hs-bar-shift">${turno && turno.rango ? `${turno.etiqueta} (${turno.rango})` : 'No shift'}</b>
+                <span class="hs-bar-sep"></span>
+                <span class="hs-bar-state">${enTurno ? "You're on shift" : (turno?.clave === 'off' ? 'Off duty' : 'Off shift')}</span>
+                <button type="button" class="hs-schedule" data-cal>
+                    VIEW SCHEDULE
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </button>
+            </div>`;
+
+        // --- Tarjeta principal ---
+        const inicio = proximoInicio(turno);
+        const falta = inicio ? cuentaAtras(inicio) : null;
+
+        let bloqueInferior;
+        if (enTurno) {
+            bloqueInferior = `
+                <span class="hs-label">CURRENT SHIFT</span>
+                <div class="hs-hero-row">
+                    <div class="hs-hero-cell">
+                        <span>${turno.rango}</span>
+                        <b>${prog.texto.replace(' left', '')}</b>
                     </div>
-                    ${flecha}
-                    <div class="hs-bar"><i style="width:${(prog.fraccion * 100).toFixed(1)}%"></i></div>
-                </div>`;
-        } else if (turno && turno.clave === 'off') {
-            html += `
-                <div class="hs-shift off">
-                    <div class="hs-main">
-                        <span class="hs-label">${fecha}</span>
-                        <b class="hs-big">Off duty</b>
+                    <div class="hs-hero-cell accent">
+                        <span>Shift progress</span>
+                        <b>${Math.round(prog.fraccion * 100)}%</b>
                     </div>
-                    ${flecha}
-                </div>`;
-        } else if (turno) {
-            html += `
-                <div class="hs-shift">
-                    <div class="hs-main">
-                        <span class="hs-label">${fecha} · next ${turno.etiqueta}</span>
-                        <b class="hs-big">${turno.rango}</b>
+                </div>
+                <div class="hs-bar-track"><i style="width:${(prog.fraccion * 100).toFixed(1)}%"></i></div>`;
+        } else {
+            const esHoy = inicio && inicio.toDateString() === hoy.toDateString();
+            const dia = !inicio ? '--'
+                : (esHoy ? 'TODAY'
+                   : `${dias[inicio.getDay()].toUpperCase()} ${meses[inicio.getMonth()].slice(0, 3).toUpperCase()} ${inicio.getDate()}`);
+            bloqueInferior = `
+                <span class="hs-label">NEXT ${turno?.etiqueta?.toUpperCase() || 'SHIFT'}</span>
+                <div class="hs-hero-row">
+                    <div class="hs-hero-cell">
+                        <span>${dia}</span>
+                        <b>${turno?.rango || '--'}</b>
                     </div>
-                    ${flecha}
+                    <div class="hs-hero-cell accent">
+                        <span>Time until shift</span>
+                        <b>${falta || '--'}</b>
+                    </div>
                 </div>`;
         }
+
+        html += `
+            <section class="hs-hero">
+                <div class="hs-hero-photo" aria-hidden="true"></div>
+                <div class="hs-hero-head">
+                    <span class="hs-eyebrow">${dias[hoy.getDay()].toUpperCase()}</span>
+                    <b class="hs-date">${meses[hoy.getMonth()]} ${hoy.getDate()}, ${hoy.getFullYear()}</b>
+                </div>
+                <div class="hs-hero-foot">${bloqueInferior}</div>
+                <button type="button" class="hs-hero-go" data-cal aria-label="Open calendar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M5 12h14M12 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+            </section>`;
 
         // --- Borrador sin terminar ---
         if (borrador) {
             html += `
                 <button type="button" class="hs-resume" data-resume="${borrador.tab}">
-                    <span class="hs-dot"></span>
+                    <span class="hs-warn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                            <line x1="12" y1="7" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </span>
                     <span class="hs-resume-text">
                         <b>${borrador.nombre} unfinished</b>
-                        <em>${borrador.campos} field${borrador.campos === 1 ? '' : 's'} filled · tap to continue</em>
+                        <em>${borrador.campos} field${borrador.campos === 1 ? '' : 's'} filled &middot; Tap to continue</em>
                     </span>
+                    <svg class="hs-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M9 18l6-6-6-6"></path>
+                    </svg>
                 </button>`;
         }
 
         // --- Documentos del turno ---
         const fichas = DOCUMENTOS.map(d => {
             const hecho = hechos.find(r => r.type === d.tipo);
+            const frac = hecho ? 1 : avanceDe(d.tipo);
             return `
                 <button type="button" class="hs-doc${hecho ? ' done' : ''}" data-doc="${d.tab}">
-                    <span class="hs-doc-name">${d.nombre}</span>
-                    <span class="hs-doc-state">${hecho ? '&#10003; ' + (hecho.displayTime || 'filed') : 'Pending'}</span>
+                    <span class="hs-doc-ic ${d.tipo}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ICONOS[d.tipo] || ''}</svg>
+                    </span>
+                    <span class="hs-doc-txt">
+                        <b>${d.nombre}</b>
+                        <em>${hecho ? (hecho.displayTime || 'Filed') : 'Pending'}</em>
+                    </span>
+                    ${anillo(frac, d.tipo + (hecho ? ' full' : ''))}
                 </button>`;
         }).join('');
 
@@ -199,7 +303,9 @@
         caja.querySelector('[data-resume]')?.addEventListener('click', (e) => {
             app().openTab(e.currentTarget.dataset.resume);
         });
-        caja.querySelector('[data-cal]')?.addEventListener('click', () => app().openTab('calendar'));
+        caja.querySelectorAll('[data-cal]').forEach(b => {
+            b.addEventListener('click', () => app().openTab('calendar'));
+        });
     }
 
     // ============================================
@@ -210,6 +316,9 @@
         // repetia el dia y la fecha ya visibles en el chip de arriba y dejaba
         // hueco muerto. Se oculta en vez de borrarla porque updateDateDisplay
         // sigue escribiendo en sus nodos.
+        const chip = document.querySelector('.shift-badge-container');
+        if (chip) chip.hidden = true;
+
         const vieja = document.querySelector('.main-content .shift-card');
         if (vieja && !document.getElementById('home-status')) {
             vieja.hidden = true;
