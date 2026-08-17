@@ -1807,6 +1807,10 @@
                 </div>
             </div>
             <div class="view-content">
+                <!-- Resumen del mes: sale de las entradas de turno y de los
+                     Patrol Log ya guardados (js/month-summary.js) -->
+                <div class="form-section month-summary" id="month-summary"></div>
+
                 <!-- Monthly Calendar -->
                 <div class="form-section calendar-section">
                     <div class="calendar-header">
@@ -2310,6 +2314,9 @@
     <script src="js/form-progress.js"></script>
     <script src="js/photos.js"></script>
     <script src="js/citations.js"></script>
+    <!-- Despues de home.js: usan turnoDeHoy para saber que turno toca -->
+    <script src="js/shift-tools.js"></script>
+    <script src="js/month-summary.js"></script>
     <script src="js/lock.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/data-io.js"></script>

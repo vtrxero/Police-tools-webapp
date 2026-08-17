@@ -53,6 +53,8 @@ js/photos.js            fotos de daños del PMCS
 js/home.js              estado del turno en el inicio
 js/form-progress.js     secciones, progreso y prellenado
 js/citations.js         citaciones del turno y buscador global
+js/shift-tools.js       prellenado por turno, continuación y plantillas
+js/month-summary.js     resumen del mes
 js/pdf-generator.js     relleno de AcroForms con pdf-lib
 js/pdf-mappings.js      mapeo campo UI -> campo PDF
 js/pdf-view.js          vista previa en canvas con pdf.js
@@ -248,8 +250,24 @@ a la cuenta de Google del dispositivo.
 - **Fotos de daños** en el PMCS, adjuntas como páginas extra del PDF.
 - **Citaciones del turno**: desde una ley se añade al turno y los contadores de
   Moving / Non-Moving del Patrol Log se rellenan solos.
-- **Buscador global** sobre leyes, reportes y misiones anteriores.
+- **Buscador global** sobre leyes, reportes y misiones anteriores. Busca dentro
+  de todos los campos de los documentos guardados, así que encuentra un
+  entrevistado, un MID o una placa sin abrir los PDFs, y dice en qué campo
+  coincidió. Se excluyen las firmas (son PNG en base64).
 - **Prellenado** con los datos del turno anterior.
+- **Cabecera desde el calendario**: la app ya sabe qué turno toca hoy, así que
+  ofrece poner la fecha y marcar DAYS / SWINGS / MID en el Patrol Log.
+- **Continuar del turno anterior**: el Mid Shift cruza medianoche y queda
+  partido en dos Patrol Log. Arrastra el millaje de cierre como millaje de
+  apertura, con el vehículo y el radio.
+- **Plantillas de misión**: las descripciones que se repiten cada turno, a un
+  toque. Las que se usan de verdad suben en la lista.
+- **Aviso de PMCS**: si el turno está empezado y no hay inspección del día,
+  avisa. Una vez al día y solo estando de turno.
+- **Resumen del mes**: horas, horas extra, citaciones y documentos, con el
+  desglose. Sale de lo que ya está guardado, así que no hay nada nuevo que
+  rellenar. Las horas se recalculan de las horas de entrada y salida porque el
+  campo `total_hours` daba negativo en los turnos que cruzan medianoche.
 - El inicio muestra cuánto falta del turno, qué documentos se enviaron hoy y si
   hay un borrador sin terminar.
 

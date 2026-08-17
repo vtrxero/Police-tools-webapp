@@ -31,19 +31,37 @@
         mid:    { ini: 17.5 * 60, fin: 6.5 * 60, etiqueta: 'Mid Shift', rango: '1730-0630' }
     };
 
-    function turnoDeHoy() {
+    /**
+     * getPanamaShiftForDate devuelve { type: 'on' | 'off', shift: 'day' |
+     * 'night' }: en type va si se trabaja y en shift cual de los dos turnos.
+     * Aqui se buscaba HORARIOS[panama.type], es decir HORARIOS['on'], que no
+     * existe — asi que en cuanto se configuraba el patron de Panama esta
+     * funcion devolvia null y el inicio se quedaba sin turno. Funcionaba solo
+     * mientras el patron estaba sin configurar, porque entonces cae al turno
+     * por defecto de los ajustes.
+     */
+    const DE_PANAMA = { day: 'days', night: 'mid' };
+
+    function turnoDeFecha(fecha) {
         // Si hay calendario Panama configurado, manda ese
         try {
-            const panama = app()?.getPanamaShiftForDate?.(new Date());
-            if (panama && panama.type && panama.type !== 'off') {
-                return HORARIOS[panama.type] ? { clave: panama.type, ...HORARIOS[panama.type] } : null;
+            const panama = app()?.getPanamaShiftForDate?.(fecha);
+            if (panama && panama.type === 'off') {
+                return { clave: 'off', etiqueta: 'Off duty', rango: '' };
             }
-            if (panama && panama.type === 'off') return { clave: 'off', etiqueta: 'Off duty', rango: '' };
+            if (panama && panama.type === 'on') {
+                const clave = DE_PANAMA[panama.shift] || 'days';
+                return { clave, ...HORARIOS[clave] };
+            }
         } catch (e) {}
 
         // Si no, el turno por defecto de los ajustes
         const porDefecto = document.getElementById('default-shift')?.value || 'days';
         return { clave: porDefecto, ...HORARIOS[porDefecto] };
+    }
+
+    function turnoDeHoy() {
+        return turnoDeFecha(new Date());
     }
 
     /** Progreso del turno actual: 0 a 1, o null si no esta en curso. */
@@ -351,5 +369,5 @@
         setTimeout(init, 100);
     }
 
-    window.PoliceToolsHome = { render, turnoDeHoy, progresoTurno };
+    window.PoliceToolsHome = { render, turnoDeHoy, turnoDeFecha, progresoTurno, HORARIOS };
 })();

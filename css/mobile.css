@@ -1418,6 +1418,110 @@ body.keyboard-open .bottom-nav {
 }
 
 /* ============================================
+   24b. HERRAMIENTAS DE TURNO (js/shift-tools.js)
+   ============================================ */
+
+/* Tarjetas de relleno: mismo lenguaje que .fp-prefill, que ya existia para
+   "usar los datos del turno anterior". Se apilan, asi que el margen va aqui y
+   no en cada una. */
+.st-fill {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border: 1px dashed var(--accent-blue);
+    border-radius: 14px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* Continuar del turno anterior arrastra datos de otro dia: en ambar, para que
+   no se confunda con lo que sale del calendario de hoy. */
+.st-fill[data-st="seguir"] {
+    border-color: var(--accent-yellow);
+}
+
+.st-fill:active {
+    transform: scale(0.985);
+}
+
+.st-fill-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.st-fill-text b {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 650;
+}
+
+.st-fill-text em {
+    display: block;
+    font-style: normal;
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    margin-top: 1px;
+}
+
+.st-fill-go {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: 9px;
+    background: var(--accent-blue);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.st-fill[data-st="seguir"] .st-fill-go {
+    background: var(--accent-yellow);
+    color: #201a06;
+}
+
+/* ---- Plantillas de mision ---- */
+/* Scroll horizontal: son ocho y no caben en el ancho de un telefono.
+   Envolviendolas ocuparian cuatro lineas encima del campo. */
+.st-chips {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Sangrado para que la primera y la ultima no queden pegadas al borde */
+    padding: 2px 0 4px;
+}
+
+.st-chips::-webkit-scrollbar { display: none; }
+
+.st-chip {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid rgba(128, 128, 128, 0.28);
+    border-radius: 999px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-family: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.st-chip:active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+}
+
+/* ============================================
    25. FOTOS DE DAÑOS
    ============================================ */
 .ph-grid {

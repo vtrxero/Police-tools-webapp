@@ -2431,9 +2431,14 @@ class PoliceToolsApp {
                     ? { texto: 'Night shift', clase: 'night' }
                     : { texto: 'Day shift', clase: 'day' };
 
-        const horas = registrados.map(s =>
-            `${s.begin_time || '?'}–${s.end_time || '?'}${s.total_hours ? ` (${s.total_hours} h)` : ''}`
-        ).join(', ');
+        // addShift guarda beginTime / endTime / totalHours en camelCase; se
+        // aceptan las dos formas por si quedan entradas de una version vieja.
+        const horas = registrados.map(s => {
+            const ini = s.beginTime || s.begin_time || '?';
+            const fin = s.endTime || s.end_time || '?';
+            const tot = s.totalHours || s.total_hours;
+            return `${ini}–${fin}${tot ? ` (${tot} h)` : ''}`;
+        }).join(', ');
 
         caja.hidden = false;
         caja.innerHTML = `
@@ -2586,9 +2591,11 @@ class PoliceToolsApp {
         }
         
         this.saveAllData();
-        
+
         this.renderShiftHistory();
         this.renderCalendar(); // Re-render to show the shift dot
+        // El resumen del mes cuenta estas horas
+        document.dispatchEvent(new CustomEvent('shiftschanged'));
         document.getElementById('shift-form')?.reset();
         document.getElementById('total_hours').value = '';
         this.selectedCalendarDate = null;

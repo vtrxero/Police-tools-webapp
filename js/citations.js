@@ -176,17 +176,42 @@
             leyes = (typeof searchLaws === 'function' ? searchLaws(q.trim(), 'all') : []).slice(0, 8);
         } catch (e) {}
 
-        // Reportes guardados
-        const reportes = (app()?.dailyReports || []).filter(r =>
-            contiene(r.title) || contiene(r.filename) ||
-            contiene(r.formData?.police_name) || contiene(r.formData?.operator_name)
-        ).slice(0, 8);
+        // Reportes guardados: se busca en todos los campos del formulario, no
+        // solo en el nombre del oficial. Es lo que permite encontrar un
+        // entrevistado, un MID o una placa sin abrir los PDFs uno por uno.
+        //
+        // Campos excluidos: los que traen la misma palabra en cada documento
+        // (nombre del oficial que rellena, unidad) inundarian el resultado, y
+        // las firmas son imagenes en base64.
+        const IGNORAR = /^(sig\d_(sign|print)|signature|__|missions|personnel)/;
 
-        // Misiones de turnos anteriores
+        const coincideEnFormData = (r) => {
+            const f = r.formData || {};
+            for (const [clave, valor] of Object.entries(f)) {
+                if (IGNORAR.test(clave)) continue;
+                if (typeof valor !== 'string' && typeof valor !== 'number') continue;
+                if (contiene(valor)) return campoLegible(clave);
+            }
+            return null;
+        };
+
+        const reportes = [];
+        for (const r of (app()?.dailyReports || [])) {
+            if (contiene(r.title) || contiene(r.filename)) {
+                reportes.push({ ...r, coincidencia: null });
+                continue;
+            }
+            const campo = coincideEnFormData(r);
+            if (campo) reportes.push({ ...r, coincidencia: campo });
+        }
+
+        // Misiones de turnos anteriores.
+        // La clave era __missions, que no existe: buildPayload las guarda en
+        // formData.missions, asi que esta busqueda nunca encontraba ninguna.
         const misiones = [];
         for (const r of (app()?.dailyReports || [])) {
             if (r.type !== 'patrol') continue;
-            const ms = r.formData?.__missions || r.missions || [];
+            const ms = r.formData?.missions || r.missions || [];
             for (const m of ms) {
                 if (contiene(m.description) || contiene(m.remarks)) {
                     misiones.push({ ...m, fecha: (r.documentDate || r.date || '').split('T')[0] });
@@ -194,7 +219,13 @@
             }
         }
 
-        return { leyes, reportes, misiones: misiones.slice(0, 8) };
+        return { leyes, reportes: reportes.slice(0, 8), misiones: misiones.slice(0, 8) };
+    }
+
+    /** vehicle_number -> "Vehicle number", para decir donde coincidio. */
+    function campoLegible(clave) {
+        const s = String(clave).replace(/_/g, ' ').trim();
+        return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
     function abrirBuscador() {
@@ -258,7 +289,8 @@
                         r.reportes.map((rep) => `
                             <button type="button" class="gs-item" data-rep="${rep.id}">
                                 <b>${rep.title || rep.type}</b>
-                                <em>${(rep.documentDate || rep.date || '').split('T')[0]} · ${rep.filename}</em>
+                                <em>${(rep.documentDate || rep.date || '').split('T')[0]}${
+                                    rep.coincidencia ? ` · matched in ${rep.coincidencia}` : ` · ${rep.filename}`}</em>
                             </button>`).join('') + `</div>`;
                 }
 
