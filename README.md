@@ -48,9 +48,13 @@ pdf-templates/          plantillas AcroForm
 Los PDFs se entregan como **formularios rellenables**: los valores se ven al
 abrirlos y los campos siguen siendo editables en cualquier visor. No se aplanan.
 
-Para conseguirlo se generan las apariencias con `updateFieldAppearances()` y se
-marca `NeedAppearances` en el AcroForm, de modo que los visores que no leen las
-apariencias precalculadas las regeneren ellos.
+Para conseguirlo se generan las apariencias (`/AP`) con `updateFieldAppearances()`
+y se dejan los campos intactos.
+
+No se marca `NeedAppearances`: esa bandera le dice al visor que ignore las
+apariencias del archivo y las reconstruya él mismo, y al hacerlo coloca mal el
+texto de los campos que la app crea (se veía el valor de un campo encima del de
+al lado). Con las `/AP` ya generadas no hace falta.
 
 Los cuatro documentos se generan sobre la plantilla oficial correspondiente.
 Si falta una plantilla, la generación se detiene con un error explícito en vez
@@ -84,6 +88,17 @@ Dos defectos de la plantilla se corrigen al vuelo:
 
 Si hay más misiones que filas (65), la app avisa en vez de descartarlas
 en silencio.
+
+### Cabecera del PMCS Taurus
+
+`PMCS Taurus.pdf` es otra edición del formulario (9232-R-E, JUN 2008) y sólo
+define `Shift` en la página 1: los otros nueve recuadros de la cabecera están
+impresos pero sin campo de formulario, así que el vehículo, el operador, el
+supervisor y los millajes se perdían al generar el PDF.
+
+`pmcsTaurusMapping.missingFields` declara esos nueve campos con las coordenadas
+medidas sobre las etiquetas impresas de esa misma página, y
+`crearCamposAusentes` los crea al generar. La cabecera pasa de 1/10 a 10/10.
 
 ### Rejilla del PMCS
 

@@ -429,6 +429,37 @@ const pmcsTaurusMapping = {
     templateFile: 'PMCS Taurus.pdf',
     totalFields: 98,
     vehicleType: 'taurus',
+
+    // ============================================
+    // CAMPOS AUSENTES EN LA PLANTILLA
+    //
+    // PMCS Taurus.pdf es otra edicion del formulario (9232-R-E, JUN 2008) y
+    // solo define "Shift" en la pagina 1: los otros nueve recuadros de la
+    // cabecera estan impresos pero sin campo de formulario, asi que el
+    // vehiculo, el operador, el supervisor y los millajes se perdian al
+    // generar el PDF.
+    //
+    // Las coordenadas salen de las etiquetas impresas de esa misma pagina
+    // (origen abajo-izquierda, pagina de 540x720 pt). Cada campo empieza
+    // despues de su etiqueta y termina antes de la siguiente. El desplazamiento
+    // vertical y el alto se toman del campo "Shift" que si existe: la linea
+    // base de la etiqueta menos 20pt, 23pt de alto.
+    // ============================================
+    missingFields: [
+        { name: 'Unit', page: 0, x: 163, y: 551, width: 257, height: 23 },
+        { name: 'Date', page: 0, x: 453, y: 551, width: 82, height: 23 },
+
+        { name: 'Vehicle', page: 0, x: 53, y: 128, width: 59, height: 23 },
+        { name: 'Operator Name', page: 0, x: 192, y: 128, width: 150, height: 23 },
+
+        { name: 'Patrol Supervisor Name', page: 0, x: 118, y: 92, width: 166, height: 23 },
+        { name: 'Desk Sergeant Name', page: 0, x: 103, y: 56, width: 181, height: 23 },
+
+        { name: 'Mileage Out', page: 0, x: 66, y: 19, width: 32, height: 23 },
+        { name: 'Mileage In', page: 0, x: 158, y: 19, width: 49, height: 23 },
+        { name: 'Additional Operators', page: 0, x: 314, y: 19, width: 220, height: 23 }
+    ],
+
     // Taurus tiene nombres de campo diferentes
     fields: {
         'shift': { pdfField: 'Shift', type: 'text' },

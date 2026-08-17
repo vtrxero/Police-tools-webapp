@@ -534,9 +534,13 @@ class PDFGenerator {
         
         const pdfDoc = await this.loadTemplate(templatePath);
         const form = pdfDoc.getForm();
-        
+
         this.debug('INPUT', { templateFile: mapping.templateFile });
-        
+
+        // El Taurus solo define "Shift" en la cabecera: sin esto, el resto de
+        // los datos de la pagina 1 no tendrian donde escribirse.
+        this.crearCamposAusentes(pdfDoc, mapping);
+
         let filledCount = 0;
         let xMarkCount = 0;
         
@@ -1024,6 +1028,66 @@ class PDFGenerator {
             });
     }
 
+    /**
+     * Crea los campos que el mapeo declara como ausentes en la plantilla.
+     *
+     * Algunas plantillas imprimen un recuadro pero no definen el campo de
+     * formulario correspondiente, asi que el dato se descartaba en silencio.
+     * Las posiciones vienen de `mapping.missingFields`, medidas sobre la
+     * propia plantilla (ver el comentario en pdf-mappings.js).
+     */
+    crearCamposAusentes(pdfDoc, mapping) {
+        if (!mapping || !Array.isArray(mapping.missingFields)) return 0;
+
+        const form = pdfDoc.getForm();
+        const existentes = new Set(form.getFields().map(f => f.getName()));
+        let creados = 0;
+
+        for (const def of mapping.missingFields) {
+            if (existentes.has(def.name)) continue;
+
+            const pagina = pdfDoc.getPage(def.page || 0);
+            if (!pagina) continue;
+
+            try {
+                const campo = form.createTextField(def.name);
+                campo.addToPage(pagina, {
+                    x: def.x,
+                    y: def.y,
+                    width: def.width,
+                    height: def.height,
+                    borderWidth: 0
+                });
+                try { campo.setFontSize(def.fontSize || 10); } catch (e) {}
+
+                // Sin marco: el recuadro ya esta impreso en la plantilla
+                try {
+                    for (const w of campo.acroField.getWidgets()) {
+                        w.dict.delete(this.PDFLib.PDFName.of('MK'));
+                    }
+                } catch (e) {}
+
+                creados++;
+            } catch (e) {
+                this.debug('WARN', {
+                    action: 'No se pudo crear el campo ausente',
+                    campo: def.name,
+                    error: e.message
+                });
+            }
+        }
+
+        if (creados) {
+            this.debug('SUCCESS', {
+                action: 'Campos ausentes en la plantilla creados',
+                plantilla: mapping.templateFile,
+                creados
+            });
+        }
+
+        return creados;
+    }
+
     /** Marca una casilla real del AcroForm. */
     marcarCasilla(campo, marcado) {
         if (!campo) return false;
@@ -1062,28 +1126,32 @@ class PDFGenerator {
      * fija: el PDF deja de ser un formulario y el oficial ya no puede corregir
      * nada en el visor.
      *
-     * La alternativa correcta es NeedAppearances: le dice al visor que genere
-     * el las apariencias de los campos al abrirlos. Los valores se ven y los
-     * campos siguen siendo editables.
+     * La alternativa correcta es generar las apariencias (/AP) con pdf-lib y
+     * dejar los campos intactos: los valores se ven y siguen siendo editables.
+     *
+     * No se marca NeedAppearances. Esa bandera le dice al visor que ignore las
+     * apariencias del archivo y las reconstruya el mismo, y al hacerlo coloca
+     * mal el texto de los campos que la app crea (se veia el valor de un campo
+     * encima del de al lado). Con las /AP ya generadas no hace ninguna falta.
      */
     ensureFillable(pdfDoc) {
-        const { PDFName, PDFBool, PDFDict } = this.PDFLib;
+        const { PDFName, PDFDict } = this.PDFLib;
 
         try {
             const form = pdfDoc.getForm();
 
-            // 1. Intentar que pdf-lib genere las apariencias directamente
+            // 1. Generar las apariencias de todos los campos
             try {
                 form.updateFieldAppearances();
             } catch (e) {
                 this.debug('WARN', { action: 'updateFieldAppearances fallo', error: e.message });
             }
 
-            // 2. NeedAppearances como red de seguridad para los campos cuyas
-            //    apariencias pdf-lib no puede construir (sin /DA en la plantilla)
+            // 2. Si la plantilla traia NeedAppearances puesto, se retira por
+            //    el mismo motivo
             const acroForm = pdfDoc.catalog.lookup(PDFName.of('AcroForm'), PDFDict);
             if (acroForm) {
-                acroForm.set(PDFName.of('NeedAppearances'), PDFBool.True);
+                acroForm.delete(PDFName.of('NeedAppearances'));
             }
 
             // 3. Quitar el bit de solo-lectura que traen algunas plantillas.
