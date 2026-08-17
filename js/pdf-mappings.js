@@ -149,10 +149,17 @@ const patrolLogMapping = {
         'date': { pdfField: 'Date', type: 'text' },
         'police_name': { pdfField: null, type: 'text' },  // No direct field
         'mid': { pdfField: null, type: 'text' },  // No direct field
-        // Vehicle and Radio are combined in the PDF template
-        // Format should be: VEHICLE / RADIO (e.g., "85Y / 101")
-        'vehicle': { pdfField: 'Vehicle Radio No', type: 'text' },
-        'radio_no': { pdfField: 'Vehicle Radio No', type: 'text' },  // Same field - combined format
+
+        // "Vehicle:" y "Radio No.:" tienen cada uno su recuadro en el
+        // formulario, pero la plantilla los dejo sin nombrar: se llaman
+        // "undefined" y "undefined_2". El mapeo anterior los daba por
+        // inexistentes y metia "VEHICULO / RADIO" junto en "Vehicle Radio No",
+        // que es otro campo de la fila de abajo, asi que los dos recuadros
+        // salian siempre en blanco.
+        //   undefined    y=720 x=331  <- junto a la etiqueta "Vehicle:"
+        //   undefined_2  y=705 x=341  <- junto a la etiqueta "Radio No.:"
+        'vehicle': { pdfField: 'undefined', type: 'text' },
+        'radio_no': { pdfField: 'undefined_2', type: 'text' },
         
         // Mileage
         'beginning_mileage': { pdfField: 'Beginning', type: 'text' },

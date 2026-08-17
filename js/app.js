@@ -2227,6 +2227,9 @@ class PoliceToolsApp {
     }
 
     showLawDetail(law) {
+        // js/citations.js lo lee para el boton "Add to this shift"
+        window.__leyActual = law;
+
         const modal = document.createElement('div');
         modal.className = 'modal active';
         

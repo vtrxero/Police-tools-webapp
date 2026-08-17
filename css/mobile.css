@@ -1149,17 +1149,17 @@ body.keyboard-open .bottom-nav {
 .mic-wrap textarea,
 .mic-wrap input {
     /* Deja sitio al boton para que no tape el texto */
-    padding-right: 54px;
+    padding-right: 58px;
 }
 
 .mic-btn {
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
     border: none;
-    border-radius: 10px;
+    border-radius: 11px;
     background: var(--bg-secondary);
     color: var(--text-secondary);
     display: flex;
@@ -1186,4 +1186,583 @@ body.keyboard-open .bottom-nav {
 @keyframes micPulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
     50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+/* ============================================
+   22. ESTADO EN EL INICIO
+   ============================================ */
+.home-status {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 18px;
+}
+
+.hs-shift {
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    border: 1px solid rgba(128, 128, 128, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.hs-shift.running {
+    border-color: var(--accent-green);
+}
+
+.hs-shift.off {
+    opacity: 0.85;
+}
+
+.hs-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.hs-big {
+    font-size: 1.32rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.hs-bar {
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(128, 128, 128, 0.22);
+    overflow: hidden;
+    margin-top: 2px;
+}
+
+.hs-bar i {
+    display: block;
+    height: 100%;
+    background: var(--accent-green);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+/* --- Borrador sin terminar --- */
+.hs-resume {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 60px;
+    padding: 12px 16px;
+    border: 1px solid var(--accent-orange);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.hs-resume:active {
+    transform: scale(0.985);
+}
+
+.hs-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent-orange);
+    flex-shrink: 0;
+}
+
+.hs-resume-text b {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+.hs-resume-text em {
+    display: block;
+    font-style: normal;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 1px;
+}
+
+/* --- Documentos del turno --- */
+.hs-docs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.hs-doc {
+    min-height: 62px;
+    padding: 10px 8px;
+    border: 1px solid rgba(128, 128, 128, 0.15);
+    border-radius: 12px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.hs-doc:active {
+    transform: scale(0.96);
+}
+
+.hs-doc-name {
+    font-size: 0.76rem;
+    font-weight: 650;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.hs-doc-state {
+    font-size: 0.66rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.hs-doc.done {
+    border-color: var(--accent-green);
+}
+
+.hs-doc.done .hs-doc-state {
+    color: var(--accent-green);
+    font-weight: 600;
+}
+
+@media (max-width: 340px) {
+    .hs-docs { grid-template-columns: 1fr 1fr; }
+}
+
+/* La tarjeta de turno lleva la flecha del calendario a la derecha */
+.hs-shift {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 8px;
+}
+
+.hs-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.hs-shift .hs-bar {
+    grid-column: 1 / -1;
+}
+
+.hs-cal {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.hs-cal svg {
+    width: 20px;
+    height: 20px;
+}
+
+.hs-cal:active {
+    transform: scale(0.92);
+}
+
+/* ============================================
+   23. PROGRESO EN FORMULARIOS
+   ============================================ */
+.fp-bar {
+    position: sticky;
+    top: calc(var(--header-height) + var(--safe-top));
+    z-index: 9;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+    padding: 8px 0 0;
+}
+
+.fp-chips {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 0 16px 8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.fp-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.fp-chip {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid rgba(128, 128, 128, 0.25);
+    border-radius: 21px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.fp-chip:active {
+    transform: scale(0.95);
+}
+
+.fp-chip-name {
+    font-weight: 600;
+}
+
+.fp-chip-count {
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.75;
+}
+
+.fp-chip.done {
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+}
+
+.fp-chip.empty {
+    opacity: 0.65;
+}
+
+.fp-meter {
+    height: 3px;
+    background: rgba(128, 128, 128, 0.18);
+}
+
+.fp-meter i {
+    display: block;
+    height: 100%;
+    background: var(--accent-blue);
+    transition: width 0.25s ease;
+}
+
+.fp-missing {
+    padding: 7px 16px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-orange);
+    background: var(--bg-primary);
+}
+
+/* Boton de generar cuando falta algo */
+.needs-fields {
+    opacity: 0.75;
+    position: relative;
+}
+
+.needs-fields::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-orange);
+}
+
+/* ============================================
+   24. PRELLENADO DEL ULTIMO TURNO
+   ============================================ */
+.fp-prefill {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    border: 1px dashed var(--accent-blue);
+    border-radius: 14px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.fp-prefill:active {
+    transform: scale(0.985);
+}
+
+.fp-prefill-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.fp-prefill-text b {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 650;
+}
+
+.fp-prefill-text em {
+    display: block;
+    font-style: normal;
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    margin-top: 1px;
+}
+
+.fp-prefill-go {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: 9px;
+    background: var(--accent-blue);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+/* ============================================
+   25. FOTOS DE DAÑOS
+   ============================================ */
+.ph-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.ph-item {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.ph-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ph-del {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.ph-add {
+    aspect-ratio: 4 / 3;
+    border: 2px dashed rgba(128, 128, 128, 0.4);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-family: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.ph-add svg {
+    width: 24px;
+    height: 24px;
+    opacity: 0.75;
+}
+
+.ph-add:active {
+    transform: scale(0.95);
+}
+
+/* ============================================
+   26. CITACIONES DEL TURNO
+   ============================================ */
+.cit-list {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cit-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 11px;
+    background: var(--bg-primary);
+}
+
+.cit-tag {
+    flex-shrink: 0;
+    padding: 3px 7px;
+    border-radius: 5px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.cit-tag.moving { background: var(--accent-red); color: #fff; }
+.cit-tag.nonmoving { background: var(--accent-yellow); color: #1a1a1a; }
+
+.cit-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.cit-text b {
+    display: block;
+    font-size: 0.84rem;
+    color: var(--text-primary);
+}
+
+.cit-text em {
+    display: block;
+    font-style: normal;
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cit-fine {
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: 650;
+    color: var(--accent-green);
+    font-variant-numeric: tabular-nums;
+}
+
+.cit-del {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--accent-red);
+    font-size: 19px;
+    cursor: pointer;
+}
+
+.cit-clear {
+    width: 100%;
+    min-height: var(--touch-target);
+    border: none;
+    border-radius: 11px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.cit-add {
+    margin-top: 16px;
+}
+
+/* ============================================
+   27. BUSCADOR GLOBAL
+   ============================================ */
+.gs-sheet {
+    height: 82dvh;
+}
+
+.gs-input {
+    width: 100%;
+    font-size: 16px;
+    min-height: 50px;
+}
+
+.gs-results {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.gs-group label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.gs-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 11px 12px;
+    margin-bottom: 6px;
+    border: none;
+    border-radius: 11px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.gs-item.static {
+    cursor: default;
+}
+
+.gs-item:not(.static):active {
+    transform: scale(0.98);
+}
+
+.gs-item b {
+    display: block;
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.gs-item em {
+    display: block;
+    font-style: normal;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    line-height: 1.35;
 }

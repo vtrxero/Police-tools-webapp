@@ -32,8 +32,19 @@ Todo se guarda en `localStorage`. No hay backend ni salida de datos del disposit
 ```
 index.html              UI completa
 css/styles.css          estilos base
+css/themes.css          8 paletas + selector
 css/mobile.css          capa de optimización móvil
 js/app.js               controlador (clase PoliceToolsApp)
+js/themes.js            motor de temas y modo automático por hora
+js/navigation.js        barra inferior
+js/report-store.js      PDFs en IndexedDB
+js/data-io.js           copia de seguridad y envío por correo
+js/signature.js         firma con el dedo
+js/mission-timer.js     cronómetro de misión y dictado
+js/photos.js            fotos de daños del PMCS
+js/home.js              estado del turno en el inicio
+js/form-progress.js     secciones, progreso y prellenado
+js/citations.js         citaciones del turno y buscador global
 js/pdf-generator.js     relleno de AcroForms con pdf-lib
 js/pdf-mappings.js      mapeo campo UI -> campo PDF
 js/law-library-data.js  base de datos legal
@@ -42,6 +53,38 @@ sw.js                   Service Worker (offline)
 vendor/                 pdf-lib y JSZip servidos localmente
 pdf-templates/          plantillas AcroForm
 ```
+
+## Almacenamiento
+
+Los PDFs viven en **IndexedDB**, no en `localStorage`. Medido en el navegador:
+la cuota de `localStorage` es de ~4.8 MB y cada documento ocupa entre 0.8 y
+1.7 MB en base64, así que la app dejaba de poder guardar al tercer o cuarto
+reporte y el fallo era silencioso. IndexedDB guarda Blobs sin el 33% extra del
+base64 y dispone de ~1 GB.
+
+En `localStorage` queda solo la ficha del reporte. La migración de lo ya
+guardado corre sola al arrancar.
+
+**Haz copias.** Ajustes → Backup exporta un JSON con todo, PDFs incluidos.
+Sin eso, borrar los datos del navegador o reinstalar la PWA pierde el historial.
+
+## Envío por correo
+
+Se marcan varios documentos en Daily Reports y se envían juntos. La vía
+principal es la API de compartir con ficheros, que los pasa como adjuntos a
+Gmail, Outlook o Mail. Cuando no está disponible se descarga un ZIP y se abre
+el borrador con `mailto:`, avisando de que hay que adjuntarlo — `mailto:` no
+admite adjuntos. El asunto se compone solo con los tipos y las fechas.
+
+## Temas
+
+Ocho paletas: cuatro oscuras (Midnight, Carbon, Forest, Tactical), tres claras
+(Daylight, Paper, High Noon) y **Night Ops**, en rojo sobre negro. El ojo
+adaptado a la oscuridad apenas percibe el rojo, así que la pantalla se lee de
+madrugada sin perder la visión nocturna, que tarda unos 20 minutos en volver.
+
+Hay un modo automático por hora: Daylight de día, Midnight al atardecer y
+Night Ops de madrugada.
 
 ## PDFs
 
@@ -111,8 +154,25 @@ las cinco plantillas.
 `p. Vehicle GSA Fuel card` no tiene casillas en el formulario oficial (dice
 "On file / At the desk"); si se marca en la app, queda anotado en REMARKS.
 
+## Funciones
+
+- **Firma con el dedo**: se dibuja en un canvas y se incrusta como PNG sobre la
+  línea de firma del formulario. Antes solo se podía teclear el nombre, así que
+  había que imprimir el PDF para firmarlo.
+- **Cronómetro de misión**: un botón marca la hora de entrada con el reloj real
+  y otro cierra la misión y rellena la salida.
+- **Dictado por voz** en descripciones y observaciones, en español o inglés.
+- **Fotos de daños** en el PMCS, adjuntas como páginas extra del PDF.
+- **Citaciones del turno**: desde una ley se añade al turno y los contadores de
+  Moving / Non-Moving del Patrol Log se rellenan solos.
+- **Buscador global** sobre leyes, reportes y misiones anteriores.
+- **Prellenado** con los datos del turno anterior.
+- El inicio muestra cuánto falta del turno, qué documentos se enviaron hoy y si
+  hay un borrador sin terminar.
+
 ## Móvil
 
+- Barra de navegación inferior fija con botón para crear documentos.
 - Zoom permitido (accesibilidad); el zoom-al-enfocar de iOS se evita con
   `font-size: 16px` en los inputs, no bloqueando el gesto.
 - Objetivos táctiles de 44px mínimo.

@@ -430,20 +430,10 @@ class PDFGenerator {
         }
         
         // Fill text fields
-        // Special handling for Vehicle/Radio combined field
-        const vehicle = this.getFieldValue(formData, 'vehicle');
-        const radioNo = this.getFieldValue(formData, 'radio_no');
-        if (vehicle || radioNo) {
-            const combinedValue = vehicle && radioNo ? `${vehicle} / ${radioNo}` : (vehicle || radioNo);
-            const success = this.fillTextField(form, 'Vehicle Radio No', combinedValue, { debug: true });
-            if (success) filledCount++;
-        }
-        
+        // "Vehicle:" y "Radio No.:" tienen ahora cada uno su propio campo,
+        // asi que ya no hay que combinarlos: van por el bucle general.
         for (const [uiKey, fieldMapping] of Object.entries(mapping.fields)) {
             if (fieldMapping.type === 'text' && fieldMapping.pdfField) {
-                // Skip vehicle and radio_no as they are handled above
-                if (uiKey === 'vehicle' || uiKey === 'radio_no') continue;
-                
                 const value = this.getFieldValue(formData, uiKey);
                 if (value && value !== '') {
                     const success = this.fillTextField(form, fieldMapping.pdfField, value, { debug: true });
@@ -680,6 +670,7 @@ class PDFGenerator {
         pdfDoc.__isPMCS = true;
         
         await this.estamparFirmas(pdfDoc, mapping);
+        await this.anexarFotos(pdfDoc);
 
         this.debug('SUCCESS', { 
             template: mappingKey, 
@@ -1121,6 +1112,81 @@ class PDFGenerator {
             this.debug('WARN', { action: 'No se pudo escribir en el campo', error: e.message });
             return false;
         }
+    }
+
+    // ============================================
+    // FOTOS ADJUNTAS
+    // ============================================
+    /**
+     * Añade las fotos de daños como paginas extra al final del PDF.
+     *
+     * El formulario pide anotar daños, rayones y niveles, pero solo tiene una
+     * linea de texto. Una foto fechada deja constancia de que el daño ya
+     * estaba antes del turno.
+     */
+    async anexarFotos(pdfDoc) {
+        const fotos = window.PoliceToolsPhotos?.fotos.todas() || [];
+        if (!fotos.length) return 0;
+
+        const { StandardFonts, rgb } = this.PDFLib;
+        const fuente = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const negrita = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+        const ANCHO = 612, ALTO = 792;   // Letter vertical
+        const MARGEN = 36;
+        let puestas = 0;
+
+        // Dos fotos por pagina
+        for (let i = 0; i < fotos.length; i += 2) {
+            const pagina = pdfDoc.addPage([ANCHO, ALTO]);
+
+            pagina.drawText('DAMAGE / CONDITION PHOTOS', {
+                x: MARGEN, y: ALTO - MARGEN - 4, size: 13, font: negrita, color: rgb(0, 0, 0)
+            });
+            pagina.drawLine({
+                start: { x: MARGEN, y: ALTO - MARGEN - 14 },
+                end: { x: ANCHO - MARGEN, y: ALTO - MARGEN - 14 },
+                thickness: 1, color: rgb(0.4, 0.4, 0.4)
+            });
+
+            const huecoAlto = (ALTO - MARGEN * 2 - 40) / 2;
+
+            for (let j = 0; j < 2; j++) {
+                const foto = fotos[i + j];
+                if (!foto) break;
+
+                try {
+                    const img = await pdfDoc.embedJpg(foto.dataUrl);
+
+                    const cajaW = ANCHO - MARGEN * 2;
+                    const cajaH = huecoAlto - 26;
+                    const escala = Math.min(cajaW / img.width, cajaH / img.height);
+                    const w = img.width * escala;
+                    const h = img.height * escala;
+
+                    const topeY = ALTO - MARGEN - 34 - j * huecoAlto;
+
+                    pagina.drawImage(img, {
+                        x: MARGEN + (cajaW - w) / 2,
+                        y: topeY - h,
+                        width: w,
+                        height: h
+                    });
+
+                    const fecha = foto.fecha ? new Date(foto.fecha).toLocaleString() : '';
+                    pagina.drawText(`Photo ${i + j + 1} of ${fotos.length}${fecha ? '  ·  ' + fecha : ''}`, {
+                        x: MARGEN, y: topeY - h - 13, size: 8, font: fuente, color: rgb(0.35, 0.35, 0.35)
+                    });
+
+                    puestas++;
+                } catch (e) {
+                    this.debug('WARN', { action: 'No se pudo incrustar la foto', i: i + j, error: e.message });
+                }
+            }
+        }
+
+        if (puestas) this.debug('SUCCESS', { action: 'Fotos anexadas', total: puestas });
+        return puestas;
     }
 
     // ============================================
