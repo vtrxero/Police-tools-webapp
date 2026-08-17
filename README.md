@@ -5,8 +5,15 @@ JavaScript vanilla que se sirven como archivos estáticos.
 
 ## Uso
 
+**Android:** descarga el APK desde la pestaña *Actions* del repositorio
+(artefacto `PoliceTools-debug-apk` de la última ejecución). Ver
+[ANDROID.md](ANDROID.md).
+
+**Web:**
+
 ```bash
-npx http-server -p 8080 -c-1
+npm install
+npm run serve
 # abrir http://localhost:8080
 ```
 
@@ -153,6 +160,20 @@ las cinco plantillas.
 
 `p. Vehicle GSA Fuel card` no tiene casillas en el formulario oficial (dice
 "On file / At the desk"); si se marca en la app, queda anotado en REMARKS.
+
+## Seguridad
+
+La app guarda nombres de entrevistados, direcciones y MIDs, así que tiene
+**bloqueo con PIN** de cuatro dígitos y huella donde el dispositivo la ofrezca.
+
+El PIN no se guarda: se guarda su derivación PBKDF2 con sal y 210.000
+iteraciones. Un SHA-256 a secas no serviría, porque un PIN de cuatro dígitos
+son 10.000 combinaciones y se rompe al instante. Tras cinco fallos hay que
+esperar 30 segundos; no se borra nada, porque perder los reportes por teclear
+mal sería peor que el riesgo que evita.
+
+En el APK la copia automática de Android está desactivada: subiría esos datos
+a la cuenta de Google del dispositivo.
 
 ## Funciones
 
