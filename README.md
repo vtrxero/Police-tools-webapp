@@ -54,10 +54,12 @@ js/form-progress.js     secciones, progreso y prellenado
 js/citations.js         citaciones del turno y buscador global
 js/pdf-generator.js     relleno de AcroForms con pdf-lib
 js/pdf-mappings.js      mapeo campo UI -> campo PDF
+js/pdf-view.js          vista previa en canvas con pdf.js
+js/file-out.js          descargar, compartir y correo (web y APK)
 js/law-library-data.js  base de datos legal
 js/mobile.js            teclado, conexión, hápticos, wake lock
 sw.js                   Service Worker (offline)
-vendor/                 pdf-lib y JSZip servidos localmente
+vendor/                 pdf-lib, JSZip y pdf.js servidos localmente
 pdf-templates/          plantillas AcroForm
 ```
 
@@ -75,13 +77,43 @@ guardado corre sola al arrancar.
 **Haz copias.** Ajustes → Backup exporta un JSON con todo, PDFs incluidos.
 Sin eso, borrar los datos del navegador o reinstalar la PWA pierde el historial.
 
-## Envío por correo
+## Sacar documentos del dispositivo
 
-Se marcan varios documentos en Daily Reports y se envían juntos. La vía
-principal es la API de compartir con ficheros, que los pasa como adjuntos a
-Gmail, Outlook o Mail. Cuando no está disponible se descarga un ZIP y se abre
-el borrador con `mailto:`, avisando de que hay que adjuntarlo — `mailto:` no
-admite adjuntos. El asunto se compone solo con los tipos y las fechas.
+Descargar, compartir y enviar por correo salen todos por `js/file-out.js`
+(`window.PTOut`), que tiene dos implementaciones detrás.
+
+**En el APK** la app corre en un WebView de Android, no en Chrome, y ahí no
+existe ninguna de las tres cosas que usaba la versión web:
+
+| | WebView de Android |
+|---|---|
+| `navigator.share` | no existe (es API de Chrome) |
+| `<a download href="blob:">` | no hay gestor de descargas; el clic no hace nada |
+| `<iframe src="*.pdf">` | no hay visor de PDF; sale en blanco |
+
+Ninguna de las tres lanza excepción, así que Download, Share y Preview se
+ejecutaban enteros sin hacer nada. En nativo se resuelven con los plugins
+`@capacitor/filesystem` (escribe el PDF en `Documents/PoliceTools`, y si esa
+carpeta no deja escribir cae a la de la app) y `@capacitor/share` (pasa la URI
+al selector de Android, que es lo que Gmail o Drive saben recibir). Los
+plugins se usan con `Capacitor.registerPlugin`, sin empaquetador.
+
+**En el navegador** se usan la Web Share API y `<a download>` como antes.
+
+Se marcan varios documentos en Daily Reports y se envían juntos: compartir
+los adjunta de verdad. Cuando no hay forma de adjuntar se descarga un ZIP y se
+abre el borrador con `mailto:`, avisando de que hay que adjuntarlo —
+`mailto:` no admite adjuntos. El asunto se compone con los tipos y las fechas.
+
+## Vista previa
+
+Las páginas se dibujan sobre canvas con pdf.js (`js/pdf-view.js`), en vez de
+delegar en el visor del sistema con un `<iframe>`. Así se ve igual en el
+teléfono, en el navegador y sin conexión. La librería se carga con `import()`
+la primera vez que se abre una vista previa: son 400 KB más el worker y no
+hacen falta para arrancar. Se incluyen las fuentes sustitutas de pdf.js
+(`vendor/pdfjs-fonts/`) porque los formularios usan Helvetica sin embeber y
+sin ellas los campos rellenos saldrían vacíos.
 
 ## Temas
 

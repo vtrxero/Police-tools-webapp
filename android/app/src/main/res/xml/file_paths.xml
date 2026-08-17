@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Rutas que el FileProvider puede compartir con otras aplicaciones.
+
+    Al compartir un PDF, Android no acepta una ruta de fichero: exige una URI
+    content:// emitida por este provider, y solo la emite para ficheros que
+    caigan dentro de estas rutas. Si el fichero queda fuera, el plugin Share
+    lanza IllegalArgumentException y el selector no llega a abrirse.
+
+    - cache-path      donde se escriben los PDFs para compartir (temporales)
+    - external-path   Documents/PoliceTools, la carpeta de las descargas
+    - files-path      almacenamiento interno de la app
+-->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="my_images" path="." />
-    <cache-path name="my_cache_images" path="." />
+    <cache-path name="cache" path="." />
+    <external-cache-path name="external_cache" path="." />
+    <external-path name="external" path="." />
+    <files-path name="files" path="." />
+    <external-files-path name="external_files" path="." />
 </paths>

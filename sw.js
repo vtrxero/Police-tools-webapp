@@ -11,7 +11,7 @@
  *   - Plantillas PDF: cache-first (son pesadas y no cambian).
  */
 
-const VERSION = 'v2.0.0';
+const VERSION = 'v2.1.0';
 const SHELL_CACHE = `police-tools-shell-${VERSION}`;
 const PDF_CACHE = `police-tools-pdf-${VERSION}`;
 const RUNTIME_CACHE = `police-tools-runtime-${VERSION}`;
@@ -31,6 +31,8 @@ const SHELL_ASSETS = [
     './assets/hero/skyline-violet.webp',
     './assets/hero/skyline-sunset.webp',
     './js/app.js',
+    './js/file-out.js',
+    './js/pdf-view.js',
     './js/mobile.js',
     './js/themes.js',
     './js/navigation.js',
@@ -48,14 +50,22 @@ const SHELL_ASSETS = [
     './js/pdf-mappings.js',
     './vendor/pdf-lib.min.js',
     './vendor/jszip.min.js',
+    './vendor/pdf.min.mjs',
+    './vendor/pdf.worker.min.mjs',
+    './vendor/pdfjs-fonts/LiberationSans-Regular.ttf',
+    './vendor/pdfjs-fonts/LiberationSans-Bold.ttf',
+    './vendor/pdfjs-fonts/LiberationSans-Italic.ttf',
+    './vendor/pdfjs-fonts/LiberationSans-BoldItalic.ttf',
     './assets/icon-192x192.png',
-    './assets/icon-512x512.png'
+    './assets/icon-512x512.png',
+    './assets/icon-maskable-512.png'
 ];
 
 // Plantillas PDF: se cachean en segundo plano para no retrasar la instalacion
 const PDF_TEMPLATES = [
     './pdf-templates/Interview.pdf',
     './pdf-templates/guardmount.pdf',
+    './pdf-templates/patrol_log.pdf',
     './pdf-templates/PMCS Explorer.pdf',
     './pdf-templates/PMCS Durango.pdf',
     './pdf-templates/PMCS Taurus.pdf',

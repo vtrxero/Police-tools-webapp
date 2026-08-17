@@ -1375,63 +1375,26 @@ class PDFGenerator {
         }
     }
 
-    async generatePreview(pdfDoc) {
-        try {
-            this.debug('INPUT', { action: 'Generating preview' });
-
-            // La vista previa usa el mismo documento que se descarga: si aqui
-            // se aplanara, el PDF quedaria aplanado tambien para la descarga
-            // porque pdfDoc es el mismo objeto.
-            this.ensureFillable(pdfDoc);
-
-            const pdfBytes = await pdfDoc.save();
-            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            this.debug('SUCCESS', { action: 'Preview ready' });
-            return url;
-        } catch (error) {
-            this.debug('ERROR', { action: 'Preview error', error: error.message });
-            throw error;
-        }
-    }
-
-    downloadPDF(blob, filename) {
-        try {
-            this.debug('INPUT', { action: 'Downloading', filename });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            this.debug('SUCCESS', { action: 'Download complete' });
-        } catch (error) {
-            this.debug('ERROR', { action: 'Download error', error: error.message });
-            throw error;
-        }
+    /**
+     * Salida al dispositivo: js/file-out.js (window.PTOut).
+     *
+     * Aqui habia un downloadPDF con <a download> y un sharePDF con
+     * navigator.share. Ninguna de las dos cosas existe en el WebView del APK,
+     * asi que la descarga y el compartir estaban muertos en el telefono. Se
+     * dejan como envoltorios para no tener dos caminos que mantener.
+     */
+    async downloadPDF(blob, filename) {
+        this.debug('INPUT', { action: 'Downloading', filename });
+        const res = await window.PTOut.descargar([{ blob, nombre: filename }]);
+        this.debug('SUCCESS', { action: 'Download complete', via: res.via });
+        return res;
     }
 
     async sharePDF(blob, filename, title = 'Police Tools Document') {
         this.debug('INPUT', { action: 'Sharing PDF', filename });
-        const file = new File([blob], filename, { type: 'application/pdf' });
-        
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-                await navigator.share({ title, files: [file] });
-                this.debug('SUCCESS', { action: 'Shared via Web Share API' });
-                return { success: true, method: 'webshare' };
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    this.debug('WARN', { action: 'Web Share failed', error: error.message });
-                }
-            }
-        }
-        
-        this.debug('WARN', { action: 'Falling back to download' });
-        this.downloadPDF(blob, filename);
-        return { success: true, method: 'download' };
+        const res = await window.PTOut.compartir([{ blob, nombre: filename }], { asunto: title });
+        this.debug('SUCCESS', { action: 'Shared', via: res.via });
+        return { success: true, method: res.via };
     }
 }
 

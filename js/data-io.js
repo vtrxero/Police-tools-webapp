@@ -34,15 +34,12 @@
         try { localStorage.setItem(clave, valor); } catch (e) {}
     }
 
-    function descargar(blob, nombre) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = nombre;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    /**
+     * Guarda el fichero. Detras esta PTOut, que en el APK escribe con
+     * Filesystem: en un WebView el truco de <a download> no descarga nada.
+     */
+    async function descargar(blob, nombre) {
+        return await window.PTOut.descargar([{ blob, nombre }]);
     }
 
     function fechaArchivo() {
@@ -127,12 +124,31 @@
 
             const json = JSON.stringify(copia);
             const blob = new Blob([json], { type: 'application/json' });
-
-            descargar(blob, `PoliceTools_Backup_${fechaArchivo()}.json`);
-            guardar(CLAVE_ULTIMA_COPIA, new Date().toISOString());
+            const nombre = `PoliceTools_Backup_${fechaArchivo()}.json`;
 
             const mb = blob.size / 1048576;
             const tam = mb >= 1 ? `${mb.toFixed(1)} MB` : `${(blob.size / 1024).toFixed(0)} KB`;
+
+            // Una copia que se queda en el mismo telefono no protege de nada:
+            // si el telefono se pierde o se borra, se va con el. En el APK se
+            // abre el selector para poder mandarla a Drive o al correo; el
+            // navegador ya descarga a una carpeta que se sincroniza.
+            try {
+                if (window.PTOut.esNativo()) {
+                    await window.PTOut.compartir([{ blob, nombre }], {
+                        asunto: `Police Tools backup — ${fechaArchivo()}`,
+                        cuerpo: `Backup of Police Tools (${tam}). Keep it somewhere safe.`
+                    });
+                } else {
+                    await descargar(blob, nombre);
+                }
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                // Si el selector falla, al menos que quede el fichero
+                await descargar(blob, nombre);
+            }
+
+            guardar(CLAVE_ULTIMA_COPIA, new Date().toISOString());
             app()?.showToast(`Backup saved (${tam})`, 'success');
             this.actualizarEstado();
         },
@@ -284,17 +300,25 @@
             }
 
             const asunto = this.asunto(reportes);
+            const items = ficheros.map(f => ({ blob: f, nombre: f.name }));
 
-            // 1. Compartir con ficheros
-            const datos = { title: asunto, text: this.cuerpo(reportes, false), files: ficheros };
-            if (navigator.canShare && navigator.canShare(datos)) {
+            // 1. Compartir con ficheros: es la unica via que los adjunta de
+            //    verdad. En el APK la hace el plugin Share de Capacitor y en
+            //    el navegador la Web Share API.
+            if (window.PTOut.puedeAdjuntar(items.length)) {
                 try {
-                    await navigator.share(datos);
+                    await window.PTOut.compartir(items, {
+                        asunto,
+                        cuerpo: this.cuerpo(reportes, false)
+                    });
                     app()?.showToast(`${ficheros.length} document(s) sent`, 'success');
                     return { metodo: 'share' };
                 } catch (e) {
                     // El usuario cancelo: no hay que caer al plan B
-                    if (e && e.name === 'AbortError') return { metodo: 'cancelado' };
+                    if (e && (e.name === 'AbortError' || /cancel/i.test(e.message || ''))) {
+                        return { metodo: 'cancelado' };
+                    }
+                    console.warn('[data-io] Compartir fallo, se usa mailto:', e.message);
                 }
             }
 
@@ -307,14 +331,14 @@
             // Descargar primero, para que el adjunto ya este cuando se abra
             // el cliente de correo
             if (ficheros.length === 1) {
-                descargar(ficheros[0], ficheros[0].name);
+                await descargar(ficheros[0], ficheros[0].name);
             } else if (typeof JSZip !== 'undefined') {
                 const zip = new JSZip();
                 ficheros.forEach(f => zip.file(f.name, f));
                 const blob = await zip.generateAsync({ type: 'blob' });
-                descargar(blob, `PoliceTools_${fechaArchivo()}.zip`);
+                await descargar(blob, `PoliceTools_${fechaArchivo()}.zip`);
             } else {
-                ficheros.forEach(f => descargar(f, f.name));
+                for (const f of ficheros) await descargar(f, f.name);
             }
 
             const params = new URLSearchParams();

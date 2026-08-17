@@ -21,6 +21,8 @@
     <link rel="stylesheet" href="css/lock.css"/>
     <link rel="manifest" href="manifest.json"/>
     <link rel="apple-touch-icon" href="assets/icon-192x192.png"/>
+    <!-- Sin esto el navegador pide /favicon.ico y se lleva un 404 -->
+    <link rel="icon" type="image/png" sizes="96x96" href="assets/icon-96x96.png"/>
     <!-- El tema se aplica antes de pintar el body: si se cargara al final,
          se veria un destello con los colores del tema anterior. -->
     <script src="js/themes.js"></script>
@@ -34,10 +36,24 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-left">
+                <!-- Aguila sobre escudo con estrella: la misma marca que el
+                     icono de la app. El escudo va en trazo y el aguila
+                     rellena, que es lo que aguanta legible a 22 px. El color
+                     lo pone el tema (currentColor). -->
                 <div class="logo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        <path d="M12 8v4M12 16h.01"></path>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 1.9 3.9 4.6v6.6c0 4.9 3.3 8.7 8.1 10.3 4.8-1.6 8.1-5.4 8.1-10.3V4.6Z"
+                              stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"></path>
+                        <g fill="currentColor">
+                            <circle cx="11.75" cy="6.95" r="1.05"></circle>
+                            <path d="M12.6 6.45 14.4 7 12.5 7.7Z"></path>
+                            <path d="M11.15 7.9h1.7v4.55L12 14.25l-.85-1.8Z"></path>
+                            <path d="M10.9 8.95 5.9 6.85v1.5l5 1.95Z"></path>
+                            <path d="M10.9 11.35 7.3 9.75v1.5l3.6 1.4Z"></path>
+                            <path d="M13.1 8.95 18.1 6.85v1.5l-5 1.95Z"></path>
+                            <path d="M13.1 11.35 16.7 9.75v1.5l-3.6 1.4Z"></path>
+                            <path d="M12 14.8 12.68 16.62 14.62 16.7 13.09 17.91 13.62 19.77 12 18.7 10.38 19.77 10.91 17.91 9.38 16.7 11.32 16.62Z"></path>
+                        </g>
                     </svg>
                 </div>
                 <div class="brand">
@@ -2204,9 +2220,9 @@
                     <h3>PDF Preview</h3>
                     <button class="close-btn" id="close-preview">X</button>
                 </div>
-                <div class="modal-body">
-                    <iframe id="pdf-preview-frame" src="" frameborder="0"></iframe>
-                </div>
+                <!-- Las paginas se dibujan aqui con pdf.js (js/pdf-view.js).
+                     Con un <iframe> el WebView de Android no pintaba nada. -->
+                <div class="modal-body" id="pdf-preview-frame"></div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="modal-share">Share</button>
                     <button class="btn btn-primary" id="modal-download">Download</button>
@@ -2225,6 +2241,10 @@
     </div>
 
     <!-- Scripts -->
+    <!-- file-out y pdf-view primero: descargar, compartir y la vista previa
+         pasan por ellos, y en el APK son la unica via que funciona. -->
+    <script src="js/file-out.js"></script>
+    <script src="js/pdf-view.js"></script>
     <script src="js/report-store.js"></script>
     <script src="js/pdf-mappings.js"></script>
     <script src="js/law-library-data.js"></script>

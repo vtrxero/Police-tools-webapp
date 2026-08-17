@@ -1765,95 +1765,67 @@ class PoliceToolsApp {
         this.updateMultiShareUI();
     }
 
+    /**
+     * Documentos marcados en forma { blob, nombre }, listos para PTOut.
+     * Se avisa de los que no se pudieron leer en vez de mandar de menos
+     * en silencio.
+     */
+    async recogerSeleccionados() {
+        const reportes = Array.from(this.selectedReports)
+            .map(i => this.dailyReports[i])
+            .filter(Boolean);
+
+        const items = [];
+        const fallidos = [];
+
+        for (const report of reportes) {
+            try {
+                const blob = await this.getReportBlob(report);
+                if (blob) items.push({ blob, nombre: report.filename });
+                else fallidos.push(report.filename);
+            } catch (e) {
+                console.error('No se pudo leer el PDF:', report.filename, e);
+                fallidos.push(report.filename);
+            }
+        }
+
+        return { items, fallidos };
+    }
+
     async shareSelectedReports() {
         if (this.selectedReports.size === 0) {
             this.showToast('No reports selected', 'warning');
             return;
         }
 
-        const selectedIndices = Array.from(this.selectedReports);
-        const selectedReports = selectedIndices.map(idx => this.dailyReports[idx]);
-        
         this.showLoading(true);
-        
-        try {
-            // Convert all PDFs to File objects
-            const files = [];
-            for (const report of selectedReports) {
-                try {
-                    const blob = await this.getReportBlob(report);
-                    if (blob) {
-                        files.push(new File([blob], report.filename, { type: 'application/pdf' }));
-                    }
-                } catch (e) {
-                    console.error('Error converting PDF:', e);
-                }
-            }
 
-            if (files.length === 0) {
+        try {
+            const { items, fallidos } = await this.recogerSeleccionados();
+
+            if (!items.length) {
                 this.showToast('Error preparing PDFs', 'error');
-                this.showLoading(false);
                 return;
             }
-
-            // Try to use native share if available (mobile)
-            if (navigator.share && navigator.canShare) {
-                const shareData = {
-                    title: `Police Tools - ${files.length} Report(s)`,
-                    text: `Sharing ${files.length} report(s) from Police Tools`,
-                    files: files
-                };
-                
-                if (navigator.canShare(shareData)) {
-                    try {
-                        await navigator.share(shareData);
-                        this.showToast('Reports shared successfully!', 'success');
-                        this.clearSelection();
-                        this.showLoading(false);
-                        return;
-                    } catch (e) {
-                        console.log('Native share failed:', e);
-                        // Continue to ZIP fallback
-                    }
-                }
+            if (fallidos.length) {
+                this.showToast(`${fallidos.length} report(s) could not be read`, 'warning');
             }
 
-            // Fallback: Generate ZIP file with all PDFs
-            if (typeof JSZip !== 'undefined') {
-                const zip = new JSZip();
-                files.forEach(file => {
-                    zip.file(file.name, file);
-                });
-                
-                const zipBlob = await zip.generateAsync({ type: 'blob' });
-                const zipFilename = `Police_Tools_Reports_${new Date().toISOString().split('T')[0]}.zip`;
-                
-                // Download the ZIP file
-                const url = URL.createObjectURL(zipBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = zipFilename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                this.showToast(`${files.length} PDF(s) downloaded as ZIP!`, 'success');
-                this.clearSelection();
+            const res = await window.PTOut.compartir(items, {
+                asunto: `Police Tools - ${items.length} report(s)`,
+                cuerpo: `${items.length} document(s) from Police Tools.`
+            });
+
+            if (res.via === 'descarga') {
+                this.showToast(`Sharing unavailable — ${items.length} PDF(s) downloaded`, 'info');
             } else {
-                // If JSZip not available, download first PDF only
-                const url = URL.createObjectURL(files[0]);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = files[0].name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                this.showToast('Downloaded first PDF (ZIP not available)', 'info');
+                this.showToast(`${items.length} report(s) shared`, 'success');
             }
-            
+            this.clearSelection();
+
         } catch (error) {
+            // Cancelar el selector del sistema no es un fallo
+            if (error && (error.name === 'AbortError' || /cancel/i.test(error.message || ''))) return;
             console.error('Share error:', error);
             this.showToast('Error sharing reports', 'error');
         } finally {
@@ -1974,6 +1946,28 @@ class PoliceToolsApp {
         return await window.PoliceToolsStore.obtener(report.id);
     }
 
+    /**
+     * Abre el modal y dibuja el PDF.
+     * El blob se guarda en this.currentPDF para que Share y Download del pie
+     * del modal no tengan que volver a leerlo de IndexedDB.
+     */
+    async mostrarPrevia(blob, filename, pdfDoc = null) {
+        const modal = document.getElementById('pdf-preview-modal');
+        const frame = document.getElementById('pdf-preview-frame');
+        if (!modal || !frame) return;
+
+        this.currentPDF = { blob, filename, pdfDoc };
+        modal.classList.add('active');
+
+        try {
+            await window.PTPdfView.render(frame, blob);
+        } catch (e) {
+            console.error('Preview error:', e);
+            frame.innerHTML = '<p class="pv-error">Could not display this document.<br>' +
+                'Use Download or Share to open it in another app.</p>';
+        }
+    }
+
     async viewDailyReport(index) {
         const report = this.dailyReports[index];
         const blob = report ? await this.getReportBlob(report) : null;
@@ -1981,19 +1975,7 @@ class PoliceToolsApp {
             this.showToast('Report not available', 'error');
             return;
         }
-
-        // La URL anterior se libera para no acumular blobs en memoria
-        if (this.currentPDF?.previewUrl?.startsWith('blob:')) {
-            URL.revokeObjectURL(this.currentPDF.previewUrl);
-        }
-
-        const url = URL.createObjectURL(blob);
-        const modal = document.getElementById('pdf-preview-modal');
-        const frame = document.getElementById('pdf-preview-frame');
-        frame.src = url;
-        modal.classList.add('active');
-
-        this.currentPDF = { previewUrl: url, filename: report.filename };
+        await this.mostrarPrevia(blob, report.filename);
     }
 
     async shareDailyReport(index) {
@@ -2005,27 +1987,13 @@ class PoliceToolsApp {
         }
 
         try {
-            
-            if (navigator.share && navigator.canShare) {
-                const file = new File([blob], report.filename, { type: 'application/pdf' });
-                const shareData = { files: [file] };
-                
-                if (navigator.canShare(shareData)) {
-                    await navigator.share(shareData);
-                    this.showToast('Report shared!', 'success');
-                    return;
-                }
-            }
-            
-            // Fallback to download
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = report.filename;
-            a.click();
-            URL.revokeObjectURL(url);
-            this.showToast('Report downloaded!', 'success');
+            const res = await window.PTOut.compartir([{ blob, nombre: report.filename }], {
+                asunto: report.filename
+            });
+            this.showToast(res.via === 'descarga' ? 'Report downloaded' : 'Report shared', 'success');
         } catch (error) {
+            if (error && (error.name === 'AbortError' || /cancel/i.test(error.message || ''))) return;
+            console.error('Share error:', error);
             this.showToast('Error sharing report', 'error');
         }
     }
@@ -2058,18 +2026,8 @@ class PoliceToolsApp {
         this.showLoading(true);
 
         try {
-            
-            // Create download link
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = report.filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.showToast('PDF downloaded!', 'success');
+            const res = await window.PTOut.descargar([{ blob, nombre: report.filename }]);
+            this.showToast(`Saved to ${res.donde}`, 'success');
         } catch (error) {
             console.error('Download error:', error);
             this.showToast('Error downloading PDF', 'error');
@@ -2693,19 +2651,15 @@ class PoliceToolsApp {
         try {
             const result = await this.generatePDF(type);
             if (!result) return;
-            
+
             const { pdfDoc, filename } = result;
-            const previewUrl = await pdfGenerator.generatePreview(pdfDoc);
-            
-            this.currentPDF = { pdfDoc, filename, previewUrl };
-            
-            const modal = document.getElementById('pdf-preview-modal');
-            const frame = document.getElementById('pdf-preview-frame');
-            frame.src = previewUrl;
-            modal.classList.add('active');
-            
+            const { blob } = await pdfGenerator.savePDF(pdfDoc, filename);
+
+            await this.mostrarPrevia(blob, filename, pdfDoc);
+
         } catch (error) {
             console.error('Preview error:', error);
+            this.showToast('Error generating preview', 'error');
         }
     }
 
@@ -2713,14 +2667,16 @@ class PoliceToolsApp {
         try {
             const result = await this.generatePDF(type);
             if (!result) return;
-            
+
             const { pdfDoc, filename } = result;
             const { blob } = await pdfGenerator.savePDF(pdfDoc, filename);
 
-            const res = await pdfGenerator.sharePDF(blob, filename);
-            this.showToast(res.method === 'webshare' ? 'PDF shared!' : 'PDF downloaded!', 'success');
-            
+            const res = await window.PTOut.compartir([{ blob, nombre: filename }], { asunto: filename });
+            this.showToast(res.via === 'descarga' ? 'PDF downloaded' : 'PDF shared', 'success');
+
         } catch (error) {
+            if (error && (error.name === 'AbortError' || /cancel/i.test(error.message || ''))) return;
+            console.error('Share error:', error);
             this.showToast('Error sharing PDF', 'error');
         }
     }
@@ -2729,36 +2685,40 @@ class PoliceToolsApp {
         try {
             const result = await this.generatePDF(type);
             if (!result) return;
-            
+
             const { pdfDoc, filename } = result;
             const { blob } = await pdfGenerator.savePDF(pdfDoc, filename);
 
-            pdfGenerator.downloadPDF(blob, filename);
-            this.showToast('PDF downloaded!', 'success');
-            
+            const res = await window.PTOut.descargar([{ blob, nombre: filename }]);
+            this.showToast(`Saved to ${res.donde}`, 'success');
+
         } catch (error) {
+            console.error('Download error:', error);
             this.showToast('Error downloading PDF', 'error');
         }
     }
 
     closeModal() {
         const modal = document.getElementById('pdf-preview-modal');
-        const frame = document.getElementById('pdf-preview-frame');
         modal.classList.remove('active');
-        frame.src = '';
-        
-        if (this.currentPDF?.previewUrl) {
-            URL.revokeObjectURL(this.currentPDF.previewUrl);
-        }
+
+        // Libera los canvas y el documento de pdf.js: un PMCS con fotos son
+        // varias paginas a resolucion de pantalla, y quedarse con ellas
+        // abiertas acaba tirando el WebView.
+        if (window.PTPdfView) window.PTPdfView.cerrar();
+
         this.currentPDF = null;
     }
 
     async shareFromModal() {
         if (!this.currentPDF) return;
         try {
-            const { blob } = await pdfGenerator.savePDF(this.currentPDF.pdfDoc, this.currentPDF.filename);
-            await pdfGenerator.sharePDF(blob, this.currentPDF.filename);
+            const { blob, filename } = this.currentPDF;
+            const res = await window.PTOut.compartir([{ blob, nombre: filename }], { asunto: filename });
+            this.showToast(res.via === 'descarga' ? 'Downloaded' : 'Shared', 'success');
         } catch (error) {
+            if (error && (error.name === 'AbortError' || /cancel/i.test(error.message || ''))) return;
+            console.error('Share error:', error);
             this.showToast('Error sharing', 'error');
         }
     }
@@ -2766,10 +2726,11 @@ class PoliceToolsApp {
     async downloadFromModal() {
         if (!this.currentPDF) return;
         try {
-            const { blob } = await pdfGenerator.savePDF(this.currentPDF.pdfDoc, this.currentPDF.filename);
-            pdfGenerator.downloadPDF(blob, this.currentPDF.filename);
-            this.showToast('Downloaded!', 'success');
+            const { blob, filename } = this.currentPDF;
+            const res = await window.PTOut.descargar([{ blob, nombre: filename }]);
+            this.showToast(`Saved to ${res.donde}`, 'success');
         } catch (error) {
+            console.error('Download error:', error);
             this.showToast('Error downloading', 'error');
         }
     }
@@ -3765,7 +3726,7 @@ class PoliceToolsApp {
         });
     }
     
-    generateJournalDocument() {
+    async generateJournalDocument() {
         const fromInput = document.getElementById('journal-filter-from');
         const toInput = document.getElementById('journal-filter-to');
         
@@ -3825,18 +3786,16 @@ class PoliceToolsApp {
 </body>
 </html>`;
         
-        // Create and download file
         const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Personal_Journal_${new Date().toISOString().split('T')[0]}.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        this.showToast('Document generated!', 'success');
+        const nombre = `Personal_Journal_${new Date().toISOString().split('T')[0]}.html`;
+
+        try {
+            const res = await window.PTOut.descargar([{ blob, nombre }]);
+            this.showToast(`Saved to ${res.donde}`, 'success');
+        } catch (e) {
+            console.error('Journal export error:', e);
+            this.showToast('Error saving the document', 'error');
+        }
     }
 }
 

@@ -199,9 +199,19 @@
         el.innerHTML = `
             <div class="lk-inner">
                 <div class="lk-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        <path d="M9 12l2 2 4-4"></path>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 1.9 3.9 4.6v6.6c0 4.9 3.3 8.7 8.1 10.3 4.8-1.6 8.1-5.4 8.1-10.3V4.6Z"
+                              stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"></path>
+                        <g fill="currentColor">
+                            <circle cx="11.75" cy="6.95" r="1.05"></circle>
+                            <path d="M12.6 6.45 14.4 7 12.5 7.7Z"></path>
+                            <path d="M11.15 7.9h1.7v4.55L12 14.25l-.85-1.8Z"></path>
+                            <path d="M10.9 8.95 5.9 6.85v1.5l5 1.95Z"></path>
+                            <path d="M10.9 11.35 7.3 9.75v1.5l3.6 1.4Z"></path>
+                            <path d="M13.1 8.95 18.1 6.85v1.5l-5 1.95Z"></path>
+                            <path d="M13.1 11.35 16.7 9.75v1.5l-3.6 1.4Z"></path>
+                            <path d="M12 14.8 12.68 16.62 14.62 16.7 13.09 17.91 13.62 19.77 12 18.7 10.38 19.77 10.91 17.91 9.38 16.7 11.32 16.62Z"></path>
+                        </g>
                     </svg>
                 </div>
                 <h2 class="lk-title">${txt.t}</h2>

@@ -891,11 +891,40 @@ body.keyboard-open .bottom-nav {
     transform: scale(0.95);
 }
 
+/* Cabecera de seleccion en dos filas.
+   Con "3 selected" y los tres botones en la misma linea no cabian en un
+   telefono de 393 px: Share se caia a una segunda fila desalineada. El
+   contador arriba y los botones repartidos abajo entra siempre. */
+.multi-share-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.multi-share-count {
+    /* No se parte en dos lineas por el hueco entre numero y palabra */
+    white-space: nowrap;
+}
+
 .multi-share-actions {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
     align-items: center;
+}
+
+/* Email y Share se reparten el ancho; Clear ocupa solo lo que necesita */
+.multi-share-actions .btn-email-selected,
+.multi-share-actions .btn-share-selected {
+    flex: 1 1 0;
+    justify-content: center;
+    min-height: var(--touch-target);
+    padding: 0 10px;
+}
+
+.multi-share-actions .btn-clear-selection {
+    flex: 0 0 auto;
+    min-height: var(--touch-target);
+    padding: 0 14px;
 }
 
 /* ============================================

@@ -58,9 +58,19 @@ jobs:
         run: |
           A=android/app/src/main/assets/public
           for f in index.html js/app.js js/lock.js js/pdf-generator.js \
+                   js/file-out.js js/pdf-view.js \
                    css/styles.css vendor/pdf-lib.min.js \
+                   vendor/pdf.min.mjs vendor/pdf.worker.min.mjs \
+                   vendor/pdfjs-fonts/LiberationSans-Regular.ttf \
                    "pdf-templates/patrol_log.pdf" "pdf-templates/PMCS Explorer.pdf"; do
             if [ ! -f "$A/$f" ]; then echo "FALTA: $f"; exit 1; fi
+          done
+          # Los plugins nativos tienen que haber entrado en el proyecto Gradle:
+          # sin ellos descargar y compartir vuelven a no hacer nada.
+          for p in capacitor-filesystem capacitor-share; do
+            if ! grep -q "$p" android/capacitor.settings.gradle; then
+              echo "FALTA el plugin: $p"; exit 1
+            fi
           done
           echo "Contenido verificado: $(find $A -type f | wc -l) archivos, $(du -sh $A | cut -f1)"
 

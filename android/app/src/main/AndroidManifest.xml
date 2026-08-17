@@ -55,4 +55,12 @@
     <!-- Desbloqueo con huella -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
+
+    <!-- Guardar los PDFs en Documents.
+         Desde Android 11 (API 30) la app puede crear ficheros en las carpetas
+         publicas sin permiso, asi que solo hace falta en versiones anteriores.
+         Con maxSdkVersion el permiso no aparece en la ficha de la app en los
+         telefonos modernos. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="29" />
 </manifest>

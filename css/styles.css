@@ -219,7 +219,7 @@ body {
 }
 
 /* ============================================
-   MAIN CONTENT - Viewport Locked (No Scroll)
+   MAIN CONTENT
    ============================================ */
 .main-content {
     padding-top: calc(var(--header-height) + 12px);
@@ -234,14 +234,24 @@ body {
     flex-direction: column;
 }
 
-/* Home View - No Scroll */
+/* El inicio scrollea con la pagina.
+   Antes estaba clavado al viewport (height: 100dvh + overflow: hidden), de
+   cuando el inicio cabia entero en pantalla. Con la tarjeta del turno, los
+   documentos del dia y la rejilla de herramientas ya no cabe: como
+   .main-content es un flex column de alto fijo, los bloques se comprimian y
+   su contenido quedaba cortado a media palabra, sin forma de llegar a el.
+   Sin alto fijo los hijos ocupan lo que necesitan y la pagina scrollea; la
+   cabecera y la barra inferior son fixed, asi que no se mueven. */
 #app > .main-content {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+    /* Los hijos nunca se comprimen por debajo de su contenido */
+    justify-content: flex-start;
 }
 
-/* Menu Grid - Compact for viewport fit */
+#app > .main-content > * {
+    flex-shrink: 0;
+}
+
+/* Menu Grid */
 .menu-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1973,10 +1983,70 @@ body {
     min-height: 400px;
 }
 
+/* ============================================
+   VISTA PREVIA DE PDF (canvas, js/pdf-view.js)
+   ============================================ */
 #pdf-preview-frame {
     width: 100%;
-    height: 100%;
-    min-height: 500px;
+    /* flex: 1 con min-height: 0 para que el scroll sea de este bloque y no
+       empuje la altura del modal en pantallas cortas */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    background: var(--bg-primary);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.pv-info {
+    align-self: flex-start;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.pv-cargando {
+    margin: auto;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Cada pagina como una hoja de papel, tambien en los temas oscuros: el PDF
+   es blanco y verlo flotando sobre el fondo ayuda a saber donde acaba */
+.pv-hoja {
+    position: relative;
+    width: 100%;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    line-height: 0;
+}
+
+/* Arriba a la derecha: abajo tapaba el "PAGE 1 OF 2" impreso del formulario */
+.pv-num {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 1.6;
+}
+
+.pv-error {
+    margin: auto;
+    padding: 20px;
+    text-align: center;
+    color: var(--accent-red, #ef4444);
+    font-size: 0.9rem;
 }
 
 .modal-footer {
