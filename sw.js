@@ -24,6 +24,7 @@ const SHELL_ASSETS = [
     './css/styles.css',
     './css/mobile.css',
     './css/themes.css',
+    './css/ui.css',
     './js/app.js',
     './js/mobile.js',
     './js/themes.js',

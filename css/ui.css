@@ -1,0 +1,373 @@
+/* ============================================
+   POLICE TOOLS - CAPA DE INTERFAZ
+   Se carga la ultima. Corrige lo que hacia que la app pareciera una app de
+   consumo de hace unos años en vez de una herramienta de trabajo:
+
+     - Cada tarjeta con un borde superior de un color distinto (morado,
+       cian, rojo, amarillo, azul, verde). Seis acentos compitiendo hacen
+       que nada destaque y que el color deje de significar nada.
+     - Sombras de colores con brillo alrededor de botones y tarjetas.
+     - Sin escala tipografica: etiquetas de 0.7rem junto a valores de 16px
+       sin relacion entre ellos.
+     - Espaciados sueltos (14, 16, 18, 20px) sin retícula.
+
+   El criterio: el color se reserva para el estado (hecho, pendiente,
+   falta), no para decorar. La jerarquia la hacen el tamaño y el peso.
+   ============================================ */
+
+:root {
+    /* --- Escala tipografica, razon 1.2 sobre 15px --- */
+    --t-label: 0.6875rem;   /* 11px  etiquetas en versal */
+    --t-meta:  0.8125rem;   /* 13px  texto secundario */
+    --t-body:  0.9375rem;   /* 15px  cuerpo */
+    --t-title: 1.0625rem;   /* 17px  titulo de tarjeta */
+    --t-sect:  1.25rem;     /* 20px  titulo de seccion */
+    --t-disp:  1.625rem;    /* 26px  cifras grandes */
+
+    /* --- Retícula de espaciado, multiplos de 4 --- */
+    --s1: 4px;
+    --s2: 8px;
+    --s3: 12px;
+    --s4: 16px;
+    --s5: 20px;
+    --s6: 24px;
+    --s8: 32px;
+
+    /* --- Bordes --- */
+    --hairline: 1px solid rgba(128, 128, 128, 0.16);
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 18px;
+}
+
+/* ============================================
+   1. SOMBRAS
+   Las sombras de color (0 8px 24px rgba(59,130,246,.35)) son el detalle
+   que mas envejece la interfaz. Se sustituyen por sombras neutras.
+   ============================================ */
+.menu-card,
+.document-card,
+.saved-entry-card,
+.form-section,
+.shift-card,
+.btn-primary,
+.btn-primary:hover,
+.law-item,
+.notification-item {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="midnight"] .menu-card,
+[data-theme="carbon"] .menu-card,
+[data-theme="forest"] .menu-card,
+[data-theme="tactical"] .menu-card,
+[data-theme="nightops"] .menu-card,
+[data-theme="midnight"] .form-section,
+[data-theme="carbon"] .form-section,
+[data-theme="forest"] .form-section,
+[data-theme="tactical"] .form-section,
+[data-theme="nightops"] .form-section {
+    box-shadow: none;
+}
+
+/* ============================================
+   2. TARJETAS DE HERRAMIENTA
+   Fuera el borde superior de color. Queda un filete fino y el color pasa
+   al glifo del icono, que es donde ayuda a reconocer la herramienta sin
+   pintar la tarjeta entera.
+   ============================================ */
+.menu-grid {
+    gap: var(--s2);
+}
+
+#app .menu-card {
+    /* Mas compacta: antes cada tarjeta ocupaba casi 150px de alto para
+       tres lineas de texto, y solo cabian cuatro en pantalla. */
+    padding: var(--s3);
+    border: var(--hairline);
+    border-radius: var(--r-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+}
+
+/* Anula los seis bordes de color de styles.css */
+#app .menu-card[data-tab] {
+    border-top: var(--hairline);
+}
+
+#app .menu-card .card-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    margin-bottom: var(--s2);
+}
+
+#app .menu-card .card-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Fondo neutro y glifo con el color de la herramienta, atenuado */
+#app .menu-card[data-tab] .card-icon {
+    background: rgba(128, 128, 128, 0.1);
+}
+
+#app .menu-card h3 {
+    font-size: var(--t-title);
+    font-weight: 620;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    margin: 0;
+}
+
+#app .menu-card p {
+    font-size: var(--t-meta);
+    color: var(--text-secondary);
+    line-height: 1.35;
+    margin: 0;
+}
+
+/* ============================================
+   3. CABECERA
+   ============================================ */
+.app-header {
+    border-bottom: var(--hairline);
+    box-shadow: none;
+}
+
+#app .logo {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-sm);
+    box-shadow: none;
+}
+
+.brand h1 {
+    font-size: 1.0625rem;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+}
+
+.brand span {
+    font-size: 0.72rem;
+    letter-spacing: 0.01em;
+    opacity: 0.72;
+}
+
+/* ============================================
+   4. CHIP DE TURNO
+   Era una pastilla con degradado y punto luminoso. Se queda en una
+   etiqueta discreta: el dato importante ya esta en la tarjeta de estado.
+   ============================================ */
+#app .shift-badge-pill {
+    background: none;
+    border: var(--hairline);
+    color: var(--text-secondary);
+    font-size: var(--t-label);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    box-shadow: none;
+}
+
+/* ============================================
+   5. TARJETA DE ESTADO
+   Es la pieza principal del inicio, asi que aqui si hay contraste de
+   tamaño: la cifra manda y todo lo demas la acompaña.
+   ============================================ */
+#app .hs-shift {
+    padding: var(--s4);
+    border-radius: var(--r-md);
+    border: var(--hairline);
+}
+
+#app .hs-label {
+    font-size: var(--t-label);
+    letter-spacing: 0.07em;
+}
+
+#app .hs-big {
+    font-size: var(--t-disp);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+}
+
+#app .hs-doc {
+    border-radius: var(--r-sm);
+    border: var(--hairline);
+    gap: var(--s1);
+}
+
+#app .hs-doc-name {
+    font-size: var(--t-meta);
+    font-weight: 600;
+}
+
+#app .hs-doc-state {
+    font-size: var(--t-label);
+    letter-spacing: 0.02em;
+}
+
+/* ============================================
+   6. SECCIONES DE FORMULARIO
+   ============================================ */
+#app .form-section {
+    border: var(--hairline);
+    border-radius: var(--r-md);
+    padding: var(--s5) var(--s4);
+    margin-bottom: var(--s3);
+}
+
+#app .form-section h3 {
+    font-size: var(--t-sect);
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    margin-bottom: var(--s4);
+}
+
+#app .form-group label {
+    font-size: var(--t-label);
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: var(--s1);
+}
+
+/* Los datos numericos se alinean en columna */
+input[inputmode="numeric"],
+input[type="date"],
+input[type="time"],
+.hs-big,
+.mt-text b,
+.mt-text span,
+.cit-fine,
+.fp-chip-count,
+.backup-status span,
+td.n {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+/* ============================================
+   7. BOTONES
+   Sin brillo de color; el peso lo da el relleno.
+   ============================================ */
+#app .btn {
+    border-radius: var(--r-sm);
+    font-size: var(--t-body);
+    font-weight: 620;
+    letter-spacing: 0.005em;
+    box-shadow: none;
+}
+
+#app .btn-primary {
+    background: var(--brand);
+    box-shadow: none;
+}
+
+#app .btn-primary:active {
+    filter: brightness(0.92);
+}
+
+#app .btn-secondary {
+    background: none;
+    border: var(--hairline);
+    color: var(--text-primary);
+}
+
+/* El boton de crear era verde con halo en todas las vistas */
+#app .create-new-btn,
+#app .btn-create-new,
+#app [id$="-create-new"] {
+    background: var(--brand);
+    box-shadow: none;
+    font-weight: 620;
+}
+
+/* ============================================
+   8. CABECERA DE VISTA
+   ============================================ */
+.view-header {
+    border-bottom: var(--hairline);
+    box-shadow: none;
+}
+
+.view-header h2 {
+    font-size: var(--t-sect);
+    font-weight: 650;
+    letter-spacing: -0.015em;
+}
+
+#app .back-btn {
+    background: rgba(128, 128, 128, 0.14);
+    border-radius: var(--r-sm);
+}
+
+#app .icon-btn {
+    background: rgba(128, 128, 128, 0.14);
+    border-radius: var(--r-sm);
+}
+
+/* ============================================
+   9. BARRA INFERIOR
+   ============================================ */
+.bottom-nav {
+    border-top: var(--hairline);
+    box-shadow: none;
+}
+
+.bn-item span {
+    font-size: 0.625rem;
+    letter-spacing: 0.015em;
+}
+
+.bn-fab svg {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* ============================================
+   10. LISTAS
+   ============================================ */
+#app .law-item,
+#app .document-card,
+#app .saved-entry-card,
+#app .notification-item {
+    border: var(--hairline);
+    border-radius: var(--r-md);
+    box-shadow: none;
+}
+
+#app .law-item h4,
+#app .document-card h4 {
+    font-size: var(--t-body);
+    font-weight: 620;
+    letter-spacing: -0.005em;
+}
+
+/* ============================================
+   11. PIE
+   ============================================ */
+/* La version iba en una pastilla que quedaba cortada bajo la barra
+   inferior. Se retira del inicio: el numero de version pertenece a
+   Ajustes, no a la pantalla que se mira en cada turno. */
+.app-footer {
+    display: none;
+}
+
+/* ============================================
+   12. MOVIMIENTO
+   La tarjeta se levantaba 2px y crecia la sombra al pasar el raton, un
+   gesto que en tactil no existe y que en escritorio distrae.
+   ============================================ */
+@media (hover: hover) {
+    .menu-card:hover,
+    .shift-card:hover,
+    .document-card:hover {
+        transform: none;
+        border-color: rgba(128, 128, 128, 0.34);
+    }
+}

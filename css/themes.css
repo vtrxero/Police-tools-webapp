@@ -439,3 +439,160 @@
     text-transform: uppercase;
     color: var(--text-secondary);
 }
+
+/* ============================================
+   COLOR DE MARCA POR TEMA
+   El boton central y el elemento activo de la barra usaban --accent-blue,
+   que en Forest o Tactical desentona con el resto de la paleta.
+   ============================================ */
+:root                      { --brand: var(--accent-blue); }
+[data-theme="forest"]      { --brand: #74c489; }
+[data-theme="tactical"]    { --brand: #ffc94d; }
+[data-theme="nightops"]    { --brand: #d94f3d; }
+[data-theme="paper"]       { --brand: #4a7c3f; }
+[data-theme="highnoon"]    { --brand: #0033cc; }
+
+.bn-fab svg          { background: var(--brand); }
+.bn-item.active      { color: var(--brand); }
+.hs-bar i            { background: var(--brand); }
+.fp-meter i          { background: var(--brand); }
+
+/* Tactical y High Noon llevan texto oscuro sobre el color de marca */
+[data-theme="tactical"] .bn-fab svg,
+[data-theme="paper"] .bn-fab svg { color: #14120c; }
+
+/* ============================================
+   EL LOGO SIGUE AL TEMA
+   Estaba fijo en degradado azul, asi que en Night Ops quedaba un
+   rectangulo azul brillante justo lo que hay que evitar de madrugada.
+   ============================================ */
+.logo {
+    background: var(--shift-gradient);
+}
+
+/* ============================================
+   NIGHT OPS: TODA LA PANTALLA EN ROJO
+   Los iconos de las tarjetas traen su color fijo (morado, cian, verde...).
+   Un solo punto brillante arruina la adaptacion a la oscuridad, asi que
+   en este tema se llevan todos a la misma gama.
+   ============================================ */
+[data-theme="nightops"] .menu-card[data-tab] .card-icon {
+    background: linear-gradient(135deg, rgba(217, 79, 61, 0.18), rgba(217, 79, 61, 0.08));
+    color: #d97a68;
+}
+
+[data-theme="nightops"] .logo {
+    background: linear-gradient(135deg, #8e2f22, #4a1109);
+    color: #ffb3a3;
+}
+
+[data-theme="nightops"] .badge,
+[data-theme="nightops"] .notification-badge {
+    background: #a33526;
+    color: #ffd9d0;
+}
+
+[data-theme="nightops"] .shift-badge-pill {
+    color: #d97a68;
+}
+
+/* El punto verde del chip de turno tambien deslumbra */
+[data-theme="nightops"] .shift-badge-pill::before,
+[data-theme="nightops"] .mt-dot,
+[data-theme="nightops"] .hs-dot {
+    background: #d94f3d;
+}
+
+/* ============================================
+   CASILLAS EN TEMAS OSCUROS
+   accent-color solo tiñe la marca; la casilla vacia se quedaba como un
+   cuadrado blanco enorme sobre el fondo oscuro.
+   ============================================ */
+[data-theme="midnight"] input[type="checkbox"],
+[data-theme="carbon"] input[type="checkbox"],
+[data-theme="forest"] input[type="checkbox"],
+[data-theme="tactical"] input[type="checkbox"],
+[data-theme="nightops"] input[type="checkbox"],
+[data-theme="dark"] input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 2px solid var(--text-muted);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+[data-theme="midnight"] input[type="checkbox"]:checked,
+[data-theme="carbon"] input[type="checkbox"]:checked,
+[data-theme="forest"] input[type="checkbox"]:checked,
+[data-theme="tactical"] input[type="checkbox"]:checked,
+[data-theme="nightops"] input[type="checkbox"]:checked,
+[data-theme="dark"] input[type="checkbox"]:checked {
+    background: var(--brand);
+    border-color: var(--brand);
+}
+
+[data-theme="midnight"] input[type="checkbox"]:checked::after,
+[data-theme="carbon"] input[type="checkbox"]:checked::after,
+[data-theme="forest"] input[type="checkbox"]:checked::after,
+[data-theme="tactical"] input[type="checkbox"]:checked::after,
+[data-theme="nightops"] input[type="checkbox"]:checked::after,
+[data-theme="dark"] input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 5px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2.5px 2.5px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+[data-theme="tactical"] input[type="checkbox"]:checked::after {
+    border-color: #14120c;
+}
+
+/* ============================================
+   CONTRASTE DE LOS CAMPOS EN TEMAS OSCUROS
+   El input usaba --bg-primary sobre una tarjeta --bg-card: dos tonos casi
+   iguales, asi que no se veia donde empezaba el campo.
+   ============================================ */
+[data-theme="midnight"] .form-group input,
+[data-theme="midnight"] .form-group select,
+[data-theme="midnight"] .form-group textarea,
+[data-theme="carbon"] .form-group input,
+[data-theme="carbon"] .form-group select,
+[data-theme="carbon"] .form-group textarea,
+[data-theme="forest"] .form-group input,
+[data-theme="forest"] .form-group select,
+[data-theme="forest"] .form-group textarea,
+[data-theme="tactical"] .form-group input,
+[data-theme="tactical"] .form-group select,
+[data-theme="tactical"] .form-group textarea,
+[data-theme="nightops"] .form-group input,
+[data-theme="nightops"] .form-group select,
+[data-theme="nightops"] .form-group textarea,
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="nightops"] .form-group input:focus,
+[data-theme="nightops"] .form-group select:focus,
+[data-theme="nightops"] .form-group textarea:focus {
+    box-shadow: 0 0 0 3px rgba(217, 79, 61, 0.3);
+}
+
+/* ============================================
+   OCULTAR LA TARJETA DE TURNO ANTIGUA
+   home.js le pone [hidden], pero .shift-card declara display:flex y gana
+   por especificidad al estilo por defecto de [hidden].
+   ============================================ */
+.shift-card[hidden] {
+    display: none !important;
+}
