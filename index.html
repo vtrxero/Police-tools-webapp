@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/mobile.css"/>
     <link rel="stylesheet" href="css/ui.css"/>
     <link rel="stylesheet" href="css/home.css"/>
+    <link rel="stylesheet" href="css/lock.css"/>
     <link rel="manifest" href="manifest.json"/>
     <link rel="apple-touch-icon" href="assets/icon-192x192.png"/>
     <!-- El tema se aplica antes de pintar el body: si se cargara al final,
@@ -1867,6 +1868,14 @@
             </div>
             <div class="view-content">
                 <div class="form-section">
+                    <h3>Security</h3>
+                    <p class="section-note">
+                        This app holds names, addresses and MIDs from interviews and rosters.
+                    </p>
+                    <div id="lock-settings"></div>
+                </div>
+
+                <div class="form-section">
                     <h3>Appearance</h3>
                     <div class="theme-auto">
                         <div class="theme-auto-text">
@@ -2228,6 +2237,7 @@
     <script src="js/form-progress.js"></script>
     <script src="js/photos.js"></script>
     <script src="js/citations.js"></script>
+    <script src="js/lock.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/data-io.js"></script>
 
@@ -2333,7 +2343,13 @@
 
     <!-- Service Worker Registration -->
     <script>
-        if ('serviceWorker' in navigator) {
+        // Dentro del APK los archivos ya vienen empaquetados, asi que el
+        // Service Worker no aporta nada y su cache puede servir la version
+        // anterior despues de actualizar la app.
+        const enApp = !!(window.Capacitor && window.Capacitor.isNativePlatform
+            && window.Capacitor.isNativePlatform());
+
+        if ('serviceWorker' in navigator && !enApp) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then((registration) => {

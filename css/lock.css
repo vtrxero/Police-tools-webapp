@@ -1,0 +1,222 @@
+/* ============================================
+   POLICE TOOLS - PANTALLA DE BLOQUEO
+   ============================================ */
+
+.lock-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--s5) var(--s4) calc(var(--safe-bottom) + var(--s5));
+    padding-top: calc(var(--safe-top) + var(--s5));
+    animation: lkIn 0.18s ease;
+}
+
+@keyframes lkIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Con la app bloqueada nada de detras debe poder tocarse ni desplazarse */
+body.locked {
+    overflow: hidden;
+}
+
+.lk-inner {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s3);
+}
+
+.lk-inner.shake {
+    animation: lkShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes lkShake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-7px); }
+    40%, 60% { transform: translateX(7px); }
+}
+
+.lk-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--shift-gradient);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--s1);
+}
+
+.lk-badge svg {
+    width: 30px;
+    height: 30px;
+}
+
+.lk-title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.lk-sub {
+    font-size: var(--t-meta);
+    color: var(--text-secondary);
+    margin: 0;
+    text-align: center;
+    min-height: 20px;
+}
+
+.lk-sub.err {
+    color: var(--accent-red);
+    font-weight: 600;
+}
+
+/* --- Puntos del PIN --- */
+.lk-dots {
+    display: flex;
+    gap: 14px;
+    margin: var(--s3) 0 var(--s4);
+    min-height: 14px;
+}
+
+.lk-dots i {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid var(--text-muted);
+    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+
+.lk-dots i.on {
+    background: var(--brand);
+    border-color: var(--brand);
+    transform: scale(1.12);
+}
+
+/* --- Teclado --- */
+.lk-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s3);
+    width: 100%;
+}
+
+.lk-key {
+    aspect-ratio: 1;
+    max-height: 74px;
+    border: var(--hairline);
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 1.5rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.07s ease, background 0.12s ease;
+}
+
+.lk-key:active:not(:disabled) {
+    transform: scale(0.92);
+    background: var(--bg-secondary);
+}
+
+.lk-key:disabled {
+    opacity: 0.4;
+}
+
+.lk-del,
+.lk-bio {
+    border-color: transparent;
+    background: none;
+    color: var(--text-secondary);
+}
+
+.lk-bio {
+    color: var(--brand);
+}
+
+.lk-del svg,
+.lk-bio svg {
+    width: 26px;
+    height: 26px;
+}
+
+.lk-bio[hidden] {
+    /* La rejilla necesita mantener el hueco para que el 0 quede centrado */
+    display: flex;
+    visibility: hidden;
+}
+
+.lk-cancel {
+    margin-top: var(--s3);
+    min-height: var(--touch-target);
+    padding: 0 var(--s5);
+    border: none;
+    border-radius: var(--r-sm);
+    background: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: var(--t-body);
+    cursor: pointer;
+}
+
+/* ============================================
+   AJUSTES DEL BLOQUEO
+   ============================================ */
+.lk-row {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    padding: var(--s3) 0;
+}
+
+.lk-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.lk-row-text b {
+    display: block;
+    font-size: var(--t-body);
+    font-weight: 650;
+    color: var(--text-primary);
+}
+
+.lk-row-text span {
+    display: block;
+    font-size: var(--t-meta);
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-top: 2px;
+}
+
+.lk-row .btn {
+    flex-shrink: 0;
+    width: auto;
+    min-width: 92px;
+    padding: 0 var(--s4);
+    margin: 0;
+}
+
+/* En horizontal el teclado no cabe entero */
+@media (orientation: landscape) and (max-height: 560px) {
+    .lk-badge { display: none; }
+    .lk-key { max-height: 52px; font-size: 1.25rem; }
+    .lk-dots { margin: var(--s2) 0; }
+}

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  La app guarda nombres, direcciones y MIDs de entrevistados. La copia
+  automatica de Android los subiria a la cuenta de Google del dispositivo
+  y los pasaria a cualquier telefono nuevo del usuario. Se excluye todo:
+  la copia se hace desde Ajustes -> Backup, que es explicita y va a un
+  archivo que controla el oficial.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

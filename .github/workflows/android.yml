@@ -1,0 +1,113 @@
+# ============================================
+# Compila el APK de Android
+#
+# El SDK de Android no se puede descargar desde el entorno de desarrollo
+# (dl.google.com esta bloqueado por politica de red), pero los runners de
+# GitHub ya lo traen instalado. Asi que el APK se compila aqui y queda
+# descargable desde la pestaña Actions de cada ejecucion.
+# ============================================
+name: Android APK
+
+on:
+  push:
+    branches: ['**']
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Compilar tambien el APK de release firmado'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: SDK de Android
+        uses: android-actions/setup-android@v3
+
+      - name: Dependencias
+        run: npm ci || npm install
+
+      - name: Preparar www y sincronizar
+        run: |
+          npm run build
+          npx cap sync android
+
+      # Comprueba que todo lo que la app necesita acabo dentro del APK.
+      # Sin esto, un fallo al copiar da un APK que instala y arranca en
+      # blanco, que es peor que un fallo de compilacion.
+      - name: Verificar contenido
+        run: |
+          A=android/app/src/main/assets/public
+          for f in index.html js/app.js js/lock.js js/pdf-generator.js \
+                   css/styles.css vendor/pdf-lib.min.js \
+                   "pdf-templates/patrol_log.pdf" "pdf-templates/PMCS Explorer.pdf"; do
+            if [ ! -f "$A/$f" ]; then echo "FALTA: $f"; exit 1; fi
+          done
+          echo "Contenido verificado: $(find $A -type f | wc -l) archivos, $(du -sh $A | cut -f1)"
+
+      - name: Compilar debug
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - name: Renombrar
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             "out/PoliceTools-debug-$(git rev-parse --short HEAD).apk"
+          ls -lh out/
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PoliceTools-debug-apk
+          path: out/*.apk
+          retention-days: 60
+
+      # El APK de release necesita una clave de firma. Se guarda en
+      # Settings -> Secrets como KEYSTORE_BASE64, y las contraseñas aparte.
+      - name: Compilar release firmado
+        if: github.event.inputs.release == 'true' && env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          cd android
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=$PWD/app/release.keystore \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+          cd ..
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             "out/PoliceTools-$(git rev-parse --short HEAD).apk"
+
+      - name: Subir APK firmado
+        if: github.event.inputs.release == 'true' && env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: PoliceTools-release-apk
+          path: out/PoliceTools-*.apk
+          retention-days: 90
