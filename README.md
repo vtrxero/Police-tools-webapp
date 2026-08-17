@@ -167,9 +167,16 @@ impedían cuadrarlo:
   adelantaba un poco en cada vuelta y acababa cayendo a mitad de mes. Se
   cuenta por meses de calendario.
 
-Los turnos de Panamá son de 12 horas (0600-1800 y 1800-0600), que es lo que
-dice su propia configuración. El inicio anunciaba «Day Shift 0700-1500» porque
-usaba los horarios de 8 horas del turno por defecto.
+Los turnos son de **13 horas**: día 0530-1830 y noche 1730-0630. Se entra media
+hora antes del relevo y se sale media hora después, y de esas 13 una va como
+**overtime** — de ahí el solape entre el fin del turno de día y el inicio del
+de noche. El inicio anunciaba «Day Shift 0700-1500» porque usaba los horarios
+de 8 horas del turno por defecto.
+
+El resumen del mes separa las dos cosas: lo que pase de 12 horas en un mismo
+turno cuenta como extra, así que tres turnos de 13 salen como 36 h regulares y
+3 h de overtime. Un turno marcado explícitamente como *overtime* cuenta
+entero.
 
 ## Temas
 

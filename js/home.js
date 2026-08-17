@@ -47,10 +47,19 @@
      * "Day Shift 0700-1500" mientras el calendario de Panama decia 06:00-18:00,
      * y la cuenta atras del turno salia con el horario que no era.
      */
+    /*
+     * Los turnos de Panama en Ft. Buchanan son de 13 horas, no de 12: se
+     * entra media hora antes del relevo y se sale media hora despues, y de
+     * esas 13 una va como overtime. De ahi el solape entre el fin del de dia
+     * (1830) y el inicio del de noche (1730).
+     */
     const PANAMA = {
-        day:   { ini: 6 * 60,  fin: 18 * 60, etiqueta: 'Day Shift',   rango: '0600-1800' },
-        night: { ini: 18 * 60, fin: 6 * 60,  etiqueta: 'Night Shift', rango: '1800-0600' }
+        day:   { ini: 5.5 * 60,  fin: 18.5 * 60, etiqueta: 'Day Shift',   rango: '0530-1830' },
+        night: { ini: 17.5 * 60, fin: 6.5 * 60,  etiqueta: 'Night Shift', rango: '1730-0630' }
     };
+
+    /** Horas de un turno de Panama que van como overtime. */
+    const HORAS_OVERTIME = 1;
 
     function turnoDeFecha(fecha) {
         // Si hay calendario Panama configurado, manda ese
@@ -379,5 +388,7 @@
         setTimeout(init, 100);
     }
 
-    window.PoliceToolsHome = { render, turnoDeHoy, turnoDeFecha, progresoTurno, HORARIOS };
+    window.PoliceToolsHome = {
+        render, turnoDeHoy, turnoDeFecha, progresoTurno, HORARIOS, PANAMA, HORAS_OVERTIME
+    };
 })();

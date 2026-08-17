@@ -21,6 +21,13 @@
     const MESES = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December'];
 
+    /**
+     * Horas regulares de una jornada. Lo que pase de aqui en un mismo turno
+     * cuenta como overtime: el turno de Panama son 13 horas y una de ellas va
+     * como extra.
+     */
+    const JORNADA_REGULAR = 12;
+
     /** Desplazamiento en meses respecto al actual: 0 este mes, -1 el pasado. */
     let desplazamiento = 0;
 
@@ -71,10 +78,23 @@
         for (const t of turnos) {
             const h = horasDe(t);
             horas += h;
-            if (t.status === 'overtime') extra += h;
+
+            if (t.status === 'overtime') {
+                // Turno entero marcado como extra
+                extra += h;
+            } else if (h > JORNADA_REGULAR) {
+                // Un turno de Panama son 13 horas de las que una es overtime.
+                // Contarlas todas como regulares dejaba las extras sin
+                // aparecer salvo que se marcara el turno completo como
+                // overtime, que tampoco es cierto.
+                extra += h - JORNADA_REGULAR;
+            }
+
             if (t.status === 'leave') licencia += h;
             if (t.status === 'sick') enfermo += h;
         }
+
+        const regulares = horas - extra - licencia - enfermo;
 
         let moving = 0, noMoving = 0, dd1805 = 0, da1408 = 0, verbales = 0;
         for (const r of docs) {
@@ -101,7 +121,7 @@
             etiqueta: `${MESES[ref.getMonth()]} ${ref.getFullYear()}`,
             esActual: desplazamiento === 0,
             turnos: turnos.length,
-            horas, extra, licencia, enfermo,
+            horas, extra, regulares, licencia, enfermo,
             citaciones: moving + noMoving,
             moving, noMoving, dd1805, da1408, verbales,
             millas,
@@ -132,6 +152,7 @@
         ];
 
         const desglose = [
+            d.extra ? `${num(d.regulares)} h regular + ${num(d.extra)} h overtime` : '',
             d.moving || d.noMoving ? `${d.moving} moving · ${d.noMoving} non-moving` : '',
             d.dd1805 ? `${d.dd1805} DD 1805` : '',
             d.da1408 ? `${d.da1408} DA 1408` : '',
