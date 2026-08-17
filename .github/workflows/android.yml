@@ -145,12 +145,24 @@ jobs:
           Ultimo cambio: $(git log -1 --pretty=%s)
           NOTAS
 
+          # La API de GitHub devuelve 503 de vez en cuando y tiraba el build
+          # entero con el APK ya compilado. Se reintenta antes de rendirse.
+          reintentar() {
+            for intento in 1 2 3 4; do
+              if "$@"; then return 0; fi
+              echo "Intento $intento fallido, se reintenta en $((intento * 10))s"
+              sleep $((intento * 10))
+            done
+            echo "No se pudo publicar la release despues de 4 intentos"
+            return 1
+          }
+
           # --clobber reemplaza el fichero si la release ya existe
           if gh release view apk-latest >/dev/null 2>&1; then
-            gh release edit apk-latest --notes-file notas.md --target "$GITHUB_SHA"
-            gh release upload apk-latest out/PoliceTools.apk --clobber
+            reintentar gh release edit apk-latest --notes-file notas.md --target "$GITHUB_SHA"
+            reintentar gh release upload apk-latest out/PoliceTools.apk --clobber
           else
-            gh release create apk-latest out/PoliceTools.apk \
+            reintentar gh release create apk-latest out/PoliceTools.apk \
               --title "Police Tools — ultimo APK" \
               --notes-file notas.md \
               --target "$GITHUB_SHA"
