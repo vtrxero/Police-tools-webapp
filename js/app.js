@@ -1958,6 +1958,7 @@ class PoliceToolsApp {
 
         this.currentPDF = { blob, filename, pdfDoc };
         modal.classList.add('active');
+        this.abrirCapa();
 
         try {
             await window.PTPdfView.render(frame, blob);
@@ -2039,12 +2040,83 @@ class PoliceToolsApp {
     /* ============================================
        NAVEGACIÓN CON HISTORY API (Android Back Button)
        ============================================ */
+    /**
+     * Capas por encima de la vista: modales, hojas y paneles.
+     *
+     * En orden de arriba abajo, que es el orden en que el boton back tiene que
+     * ir cerrandolas.
+     */
+    capasAbiertas() {
+        // offsetParent es null en todo lo que sea position: fixed, y estas
+        // capas lo son: con esa comprobacion se descartaban todas y el back
+        // seguia sin cerrar ninguna.
+        const visible = (el) => !!el && el.getClientRects().length > 0;
+
+        const capas = [
+            { el: document.getElementById('global-search'), cerrar: (e) => { e.remove(); document.body.style.overflow = ''; } },
+            { el: document.getElementById('email-sheet'), cerrar: (e) => { e.remove(); document.body.style.overflow = ''; } },
+            { el: document.querySelector('#new-sheet:not([hidden])'), cerrar: () => window.PoliceToolsNav?.cerrarHoja?.() },
+            { el: document.getElementById('law-detail-modal'), cerrar: (e) => e.remove() },
+            { el: document.querySelector('#pdf-preview-modal.active'), cerrar: () => this.closeModal() },
+            { el: document.querySelector('.lock-screen'), cerrar: null },   // el bloqueo no se salta con back
+            { el: document.querySelector('#notifications-panel.active'), cerrar: (e) => e.classList.remove('active') },
+            { el: document.querySelector('#menu-dropdown.active'), cerrar: (e) => e.classList.remove('active') }
+        ];
+
+        return capas.filter(c => c.el && visible(c.el));
+    }
+
+    /** Cierra la capa de encima. Devuelve true si habia alguna. */
+    cerrarCapaSuperior() {
+        const [arriba] = this.capasAbiertas();
+        if (!arriba) return false;
+
+        // La pantalla de bloqueo se queda: el back no puede saltarsela
+        if (!arriba.cerrar) return true;
+
+        arriba.cerrar(arriba.el);
+        return true;
+    }
+
+    /**
+     * Marca una capa recien abierta en el historial.
+     *
+     * Sin esto, una capa abierta desde el menu principal no tenia ninguna
+     * entrada detras que el back pudiera consumir: el WebView se iba de la
+     * pagina y la app se cerraba con el modal todavia puesto. Con la marca,
+     * el back siempre tiene algo que gastar en cerrar la capa.
+     */
+    abrirCapa() {
+        try {
+            window.history.pushState(
+                { ...(window.history.state || {}), capa: true },
+                '', window.location.href
+            );
+        } catch (e) { /* sin historial disponible, la capa se cierra con su boton */ }
+    }
+
     initHistoryAPI() {
         // Manejar evento popstate (botón back físico)
         window.addEventListener('popstate', (event) => {
             const state = event.state;
-            
+
+            /*
+             * Con un modal abierto, el back cerraba la vista de detras y
+             * dejaba el modal flotando sobre la nada; el siguiente back ya
+             * vaciaba el historial y salia de la app. Ahora el back cierra
+             * primero lo que hay encima, que es lo que se espera en Android.
+             *
+             * La entrada consumida se devuelve al historial para no quedarse
+             * sin sitio hacia atras despues de abrir y cerrar varios modales.
+             */
+            if (this.cerrarCapaSuperior()) return;
+
             if (state && state.tab) {
+                // Ya se esta en esa vista: la entrada consumida era la marca
+                // de una capa que se cerro con su propio boton. No hay nada
+                // que hacer, y repintar la vista daria un parpadeo.
+                if (this.currentTab === state.tab) return;
+
                 // Navegar al tab del historial
                 this.closeCurrentTab();
                 const view = document.getElementById(`${state.tab}-view`);
@@ -2188,9 +2260,15 @@ class PoliceToolsApp {
         // js/citations.js lo lee para el boton "Add to this shift"
         window.__leyActual = law;
 
+        // Si ya habia uno abierto se sustituye, y con id el boton back sabe
+        // cual es la capa que tiene que cerrar
+        document.getElementById('law-detail-modal')?.remove();
+
         const modal = document.createElement('div');
         modal.className = 'modal active';
-        
+        modal.id = 'law-detail-modal';
+        this.abrirCapa();
+
         // Badge de multa para el detalle - soporta ambos formatos
         let penaltyBadge = '';
         if (law.is_mca || law.fine === 'MCA') {

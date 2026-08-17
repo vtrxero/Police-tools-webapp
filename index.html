@@ -1339,6 +1339,24 @@
                                         <input type="text" id="mission-time-out" placeholder="1600" maxlength="4" inputmode="numeric"/>
                                     </div>
                                 </div>
+                                <!-- Las actividades del turno. Al elegir una
+                                     se escribe en la descripcion, que es el
+                                     campo que va al PDF, y queda sitio para
+                                     añadir el detalle a mano. -->
+                                <div class="entry-field full-width">
+                                    <label for="mission-activity">Activity</label>
+                                    <select id="mission-activity">
+                                        <option value="">Select activity…</option>
+                                        <option>Guard mount</option>
+                                        <option>Preventive patrol</option>
+                                        <option>Perimeter road check</option>
+                                        <option>Housing patrol</option>
+                                        <option>Walking patrol</option>
+                                        <option>Out of service</option>
+                                        <option>Police response</option>
+                                        <option>Open post activity</option>
+                                    </select>
+                                </div>
                                 <div class="entry-field full-width">
                                     <label>Mission Description</label>
                                     <textarea id="mission-description" rows="2" placeholder="Who, What, Where, Why..."></textarea>

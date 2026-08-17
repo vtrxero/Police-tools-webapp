@@ -408,6 +408,7 @@
 
         document.body.appendChild(fondo);
         document.body.style.overflow = 'hidden';
+        app()?.abrirCapa?.();
 
         const cerrar = () => {
             fondo.remove();

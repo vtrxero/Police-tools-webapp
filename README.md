@@ -291,8 +291,12 @@ a la cuenta de Google del dispositivo.
 - **Continuar del turno anterior**: el Mid Shift cruza medianoche y queda
   partido en dos Patrol Log. Arrastra el millaje de cierre como millaje de
   apertura, con el vehículo y el radio.
-- **Plantillas de misión**: las descripciones que se repiten cada turno, a un
-  toque. Las que se usan de verdad suben en la lista.
+- **Actividades de la misión**: desplegable con las ocho categorías que se
+  registran (guard mount, preventive patrol, perimeter road check, housing
+  patrol, walking patrol, out of service, police response, open post
+  activity). Al elegir una se escribe en la descripción, que es el campo que
+  va al PDF, y queda sitio para el detalle. Cambiar de actividad sustituye
+  solo esa parte y respeta lo escrito a mano.
 - **Aviso de PMCS**: si el turno está empezado y no hay inspección del día,
   avisa. Una vez al día y solo estando de turno.
 - **Resumen del mes**: horas, horas extra, citaciones y documentos, con el
@@ -314,4 +318,9 @@ a la cuenta de Google del dispositivo.
 - Enter salta al campo siguiente.
 - Wake lock mientras hay un formulario abierto.
 - Aviso de estado sin conexión.
+- El botón atrás de Android cierra la capa de encima (modal, hoja, buscador)
+  antes que la vista. Antes cerraba la vista de detrás y dejaba el modal
+  flotando; el siguiente toque salía de la app. Cada capa marca una entrada en
+  el historial al abrirse, porque una abierta desde el menú principal no tenía
+  ninguna entrada que consumir.
 - Funciona offline completo, plantillas PDF incluidas.

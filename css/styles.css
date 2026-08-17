@@ -1454,7 +1454,18 @@ body {
     gap: 8px;
 }
 
-.detail-keyword {
+/* El detalle pinta .keyword dentro de .keywords-container, pero la unica
+   regla que habia era para .detail-keyword, que no usa nadie: las palabras
+   salian sin estilo y pegadas unas a otras en una linea que se salia por la
+   derecha. Se veia solo desde que el modal scrollea. */
+.keywords-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.detail-keyword,
+.keywords-container .keyword {
     font-size: 0.8rem;
     background: rgba(66, 153, 225, 0.12);
     color: var(--accent-blue);
@@ -2272,10 +2283,19 @@ body {
     color: var(--text-primary);
 }
 
+/* El cuerpo de un modal scrollea.
+   Estaba en overflow: hidden con min-height: 400px, asi que el detalle de una
+   ley se cortaba a media frase y no habia forma de leer el resto: el texto
+   largo quedaba debajo del boton "Add to this shift". min-height: 0 es lo que
+   permite que un hijo flexible encoja por debajo de su contenido y scrollee
+   de verdad. */
 .modal-body {
-    flex: 1;
-    overflow: hidden;
-    min-height: 400px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 /* ============================================

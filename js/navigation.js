@@ -59,6 +59,8 @@
         sheet.hidden = false;
         // Bloquea el scroll de detras mientras la hoja esta abierta
         document.body.style.overflow = 'hidden';
+        // Marca en el historial para que el back cierre la hoja y no la app
+        window.app?.abrirCapa?.();
     }
 
     function cerrarHoja() {

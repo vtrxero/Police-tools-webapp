@@ -1485,42 +1485,6 @@ body.keyboard-open .bottom-nav {
     color: #201a06;
 }
 
-/* ---- Plantillas de mision ---- */
-/* Scroll horizontal: son ocho y no caben en el ancho de un telefono.
-   Envolviendolas ocuparian cuatro lineas encima del campo. */
-.st-chips {
-    display: flex;
-    gap: 6px;
-    margin-top: 8px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    /* Sangrado para que la primera y la ultima no queden pegadas al borde */
-    padding: 2px 0 4px;
-}
-
-.st-chips::-webkit-scrollbar { display: none; }
-
-.st-chip {
-    flex: 0 0 auto;
-    min-height: 34px;
-    padding: 0 12px;
-    border: 1px solid rgba(128, 128, 128, 0.28);
-    border-radius: 999px;
-    background: var(--bg-primary);
-    color: var(--text-secondary);
-    font-size: 0.78rem;
-    font-family: inherit;
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-.st-chip:active {
-    background: var(--accent-blue);
-    border-color: var(--accent-blue);
-    color: #fff;
-}
-
 /* ============================================
    25. FOTOS DE DAÑOS
    ============================================ */

@@ -17,7 +17,6 @@
     const app = () => window.app;
     const home = () => window.PoliceToolsHome;
 
-    const CLAVE_PLANTILLAS = 'policeTools_plantillasMision';
     const CLAVE_AVISO_PMCS = 'policeTools_avisoPMCS';
 
     // ============================================
@@ -200,78 +199,83 @@
     }
 
     // ============================================
-    // 3. PLANTILLAS DE MISION
+    // 3. ACTIVIDADES DE LA MISION
     // ============================================
-    const PLANTILLAS_BASE = [
+    /**
+     * Las actividades del turno, tal y como se registran en Ft. Buchanan.
+     * La lista es fija: son las categorias que se usan, no sugerencias.
+     */
+    const ACTIVIDADES = [
         'Guard mount',
-        'Routine patrol of assigned sector',
-        'Traffic control point',
-        'Escort',
-        'Building checks',
-        'Response to call for service',
-        'Break',
-        'Vehicle refuel',
-        'Report writing',
-        'Turned in shift paperwork'
+        'Preventive patrol',
+        'Perimeter road check',
+        'Housing patrol',
+        'Walking patrol',
+        'Out of service',
+        'Police response',
+        'Open post activity'
     ];
 
-    const plantillas = {
-        todas() {
-            let propias = [];
-            try { propias = JSON.parse(localStorage.getItem(CLAVE_PLANTILLAS) || '[]'); } catch (e) {}
-            // Las propias primero: son las que el oficial ha usado de verdad
-            return [...propias, ...PLANTILLAS_BASE.filter(p => !propias.includes(p))];
-        },
-
-        /** Guarda una descripcion usada, para que suba a la lista. */
-        recordar(texto) {
-            const t = String(texto || '').trim();
-            if (t.length < 4 || t.length > 60) return;
-            if (PLANTILLAS_BASE.includes(t)) return;
-
-            let propias = [];
-            try { propias = JSON.parse(localStorage.getItem(CLAVE_PLANTILLAS) || '[]'); } catch (e) {}
-            propias = [t, ...propias.filter(p => p !== t)].slice(0, 8);
-            try { localStorage.setItem(CLAVE_PLANTILLAS, JSON.stringify(propias)); } catch (e) {}
-        }
-    };
+    /** ¿Con que actividad empieza este texto? */
+    function actividadDe(texto) {
+        const t = String(texto || '').trimStart().toLowerCase();
+        // La mas larga primero, para que "Perimeter road check" gane a una
+        // hipotetica "Perimeter" si algun dia se añade
+        return [...ACTIVIDADES]
+            .sort((a, b) => b.length - a.length)
+            .find(a => t.startsWith(a.toLowerCase())) || null;
+    }
 
     /**
-     * Fila de atajos bajo el campo de descripcion de la mision.
+     * Escribe la actividad elegida al principio de la descripcion.
      *
-     * El campo del formulario es #mission-description. La clase
-     * .mission-description es otra cosa: la llevan las filas de misiones ya
-     * guardadas, que se generan al vuelo.
+     * La descripcion es el campo que va al PDF, y ahi cabe la actividad mas
+     * el detalle ("Preventive patrol — Sector 2, nada que reportar"). Elegir
+     * otra actividad sustituye solo la primera parte y respeta lo escrito a
+     * mano; sin eso, cambiar de idea dejaba las dos pegadas.
      */
-    function montarPlantillas(vista) {
-        const campo = vista.querySelector('#mission-description');
+    function aplicarActividad(campo, actividad) {
         if (!campo) return;
 
-        const contenedor = campo.closest('.entry-field') || campo.parentElement;
-        if (!contenedor || contenedor.querySelector('.st-chips')) return;
+        const texto = campo.value;
+        const anterior = actividadDe(texto);
 
-        const fila = document.createElement('div');
-        fila.className = 'st-chips';
-        fila.setAttribute('aria-label', 'Mission templates');
-
-        for (const texto of plantillas.todas().slice(0, 8)) {
-            const chip = document.createElement('button');
-            chip.type = 'button';
-            chip.className = 'st-chip';
-            chip.textContent = texto;
-            chip.addEventListener('click', () => {
-                // Se añade al final en vez de reemplazar: una mision puede
-                // ser "Routine patrol" mas un detalle escrito a mano.
-                const actual = campo.value.trim();
-                campo.value = actual ? `${actual}. ${texto}` : texto;
-                campo.dispatchEvent(new Event('input', { bubbles: true }));
-                campo.focus();
-                window.PoliceToolsMobile?.haptics.tap();
-            });
-            fila.appendChild(chip);
+        if (!actividad) {
+            // Volver a "Select activity…" quita la actividad y deja el detalle
+            campo.value = anterior
+                ? texto.trimStart().slice(anterior.length).replace(/^\s*[—-]\s*/, '')
+                : texto;
+        } else if (anterior) {
+            const resto = texto.trimStart().slice(anterior.length);
+            campo.value = actividad + resto;
+        } else {
+            const resto = texto.trim();
+            campo.value = resto ? `${actividad} — ${resto}` : actividad;
         }
 
-        contenedor.appendChild(fila);
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
+        campo.dispatchEvent(new Event('change', { bubbles: true }));
+        window.PoliceToolsMobile?.haptics.tap();
+    }
+
+    function montarActividades(vista) {
+        const select = vista.querySelector('#mission-activity');
+        const campo = vista.querySelector('#mission-description');
+        if (!select || !campo || select.dataset.stListo) return;
+
+        select.dataset.stListo = '1';
+
+        select.addEventListener('change', () => aplicarActividad(campo, select.value));
+
+        // Al escribir a mano o al editar una mision guardada, el desplegable
+        // se pone al dia solo: si no, quedaria enseñando otra cosa.
+        const sincronizar = () => {
+            const a = actividadDe(campo.value);
+            if (select.value !== (a || '')) select.value = a || '';
+        };
+        campo.addEventListener('input', sincronizar);
+        campo.addEventListener('change', sincronizar);
+        sincronizar();
     }
 
     // ============================================
@@ -314,7 +318,7 @@
             // secundario.
             montarContinuacion(vista);
             montarTurnoDeHoy(vista);
-            montarPlantillas(vista);
+            montarActividades(vista);
         }
     }
 
@@ -335,12 +339,15 @@
                 .observe(contenedor, { childList: true, subtree: true });
         }
 
-        // Guardar la descripcion usada al guardar la mision, para que suba
-        // en la lista la proxima vez
+        // Al guardar la mision el formulario se vacia, asi que el desplegable
+        // vuelve a "Select activity…" en vez de quedarse con la anterior
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#save-mission-entry')) return;
-            const campo = document.getElementById('mission-description');
-            if (campo) plantillas.recordar(campo.value);
+            setTimeout(() => {
+                const select = document.getElementById('mission-activity');
+                const campo = document.getElementById('mission-description');
+                if (select && campo) select.value = actividadDe(campo.value) || '';
+            }, 60);
         }, true);
 
         // El aviso del PMCS espera a que la app tenga los reportes cargados
@@ -359,5 +366,7 @@
         setTimeout(init, 300);
     }
 
-    window.PoliceToolsShiftTools = { plantillas, datosDelTurno, anteriorConMillaje, pmcsDeHoy, refrescar };
+    window.PoliceToolsShiftTools = {
+        ACTIVIDADES, actividadDe, datosDelTurno, anteriorConMillaje, pmcsDeHoy, refrescar
+    };
 })();
