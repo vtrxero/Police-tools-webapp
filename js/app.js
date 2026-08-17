@@ -2309,11 +2309,11 @@ class PoliceToolsApp {
         monthYearLabel.textContent = `${monthNames[month]} ${year}`;
         
         // Get holidays for this month
+        // Comparacion por cadena: new Date('2026-11-11') se lee como UTC y en
+        // husos al oeste caia en el dia anterior.
+        const prefijoMes = `${year}-${String(month + 1).padStart(2, '0')}-`;
         const holidays = this.getFederalHolidays(year);
-        const monthHolidays = holidays.filter(h => {
-            const hDate = new Date(h.date);
-            return hDate.getMonth() === month;
-        });
+        const monthHolidays = holidays.filter(h => h.date.startsWith(prefijoMes));
         
         // Get shifts for marking days
         const shifts = this.savedData.shifts || [];
@@ -2328,46 +2328,58 @@ class PoliceToolsApp {
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         
         let html = '';
-        
+
         // Previous month padding
         for (let i = startPadding - 1; i >= 0; i--) {
             html += `<div class="calendar-day other-month"><span class="day-number">${prevMonthLastDay - i}</span></div>`;
         }
-        
+
         // Current month days
         const today = new Date();
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
             const isSelected = this.selectedCalendarDate === dateStr;
-            
-            // Check for holiday
-            const holiday = monthHolidays.find(h => new Date(h.date).getDate() === day);
-            
+
+            // Check for holiday. El dia observado tambien se marca: cuando el
+            // feriado cae en fin de semana, el libre es el observado.
+            const holiday = monthHolidays.find(h => h.date === dateStr)
+                || holidays.find(h => h.observed === dateStr);
+
             // Check for shift
             const hasShift = shifts.some(s => s.date === dateStr);
-            
+
+            // Turno que toca segun el patron de Panama Schedule. Es lo que
+            // convierte esto en un tracker de turnos: antes las celdas
+            // estaban vacias y el calendario no decia nada.
+            const turno = this.getPanamaShiftForDate(new Date(year, month, day));
+
             let classes = 'calendar-day';
             if (isToday) classes += ' today';
             if (isSelected) classes += ' selected';
             if (holiday) classes += ' holiday';
             if (hasShift) classes += ' has-shift';
-            
-            html += `<div class="${classes}" data-date="${dateStr}">
+            if (turno?.type === 'on') classes += turno.shift === 'night' ? ' on-night' : ' on-day';
+            else if (turno?.type === 'off') classes += ' off';
+
+            // El nombre del feriado no cabe en la celda: va un punto, y el
+            // nombre se lee en el detalle al tocar el dia.
+            html += `<div class="${classes}" data-date="${dateStr}"${holiday ? ` data-holiday="${this.escaparAtributo(holiday.name)}"` : ''}>
                 <span class="day-number">${day}</span>
-                ${holiday ? `<span class="day-holiday-name" title="${holiday.name}">${holiday.name}</span>` : ''}
+                <span class="day-marks">${holiday ? '<i class="mark-holiday"></i>' : ''}${hasShift ? '<i class="mark-logged"></i>' : ''}</span>
             </div>`;
         }
-        
-        // Next month padding
+
+        // Next month padding: solo hasta completar la ultima semana. Rellenar
+        // siempre a 42 celdas añadia una fila entera de dias grises.
         const totalCells = startPadding + daysInMonth;
-        const remainingCells = 42 - totalCells; // 6 rows * 7 days
+        const remainingCells = (7 - (totalCells % 7)) % 7;
         for (let day = 1; day <= remainingCells; day++) {
             html += `<div class="calendar-day other-month"><span class="day-number">${day}</span></div>`;
         }
-        
+
         container.innerHTML = html;
-        
+
         // Add click handlers
         container.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
             dayEl.addEventListener('click', () => {
@@ -2375,6 +2387,70 @@ class PoliceToolsApp {
                 this.selectCalendarDate(date);
             });
         });
+
+        this.renderCalendarDetail();
+    }
+
+    /** Comillas y angulos fuera, que estos valores van dentro de un atributo. */
+    escaparAtributo(texto) {
+        return String(texto)
+            .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    /**
+     * Ficha del dia elegido: turno que toca, feriado y horas ya registradas.
+     * Aqui caben los nombres largos que no entran en la celda.
+     */
+    renderCalendarDetail() {
+        const caja = document.getElementById('calendar-detail');
+        if (!caja) return;
+
+        const dateStr = this.selectedCalendarDate;
+        if (!dateStr) {
+            caja.hidden = true;
+            caja.innerHTML = '';
+            return;
+        }
+
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const fecha = new Date(y, m - 1, d);
+        const turno = this.getPanamaShiftForDate(fecha);
+        const feriados = this.getFederalHolidays(y);
+        const feriado = feriados.find(h => h.date === dateStr);
+        // Un dia puede no ser feriado y aun asi ser el dia libre, cuando el
+        // feriado cayo en fin de semana y se observa aqui.
+        const observado = !feriado && feriados.find(h => h.observed === dateStr);
+        const registrados = (this.savedData.shifts || []).filter(s => s.date === dateStr);
+
+        const etiquetaTurno = !turno || !this.panamaConfig?.startDate
+            ? { texto: 'No schedule set', clase: 'off' }
+            : turno.type === 'off'
+                ? { texto: 'Off duty', clase: 'off' }
+                : turno.shift === 'night'
+                    ? { texto: 'Night shift', clase: 'night' }
+                    : { texto: 'Day shift', clase: 'day' };
+
+        const horas = registrados.map(s =>
+            `${s.begin_time || '?'}–${s.end_time || '?'}${s.total_hours ? ` (${s.total_hours} h)` : ''}`
+        ).join(', ');
+
+        caja.hidden = false;
+        caja.innerHTML = `
+            <b>${fecha.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</b>
+            <span class="cal-tag ${etiquetaTurno.clase}">${etiquetaTurno.texto}</span>
+            ${feriado ? `<span class="cal-tag holiday">${feriado.name}${
+                feriado.observed ? ' · observed ' + this.diaCorto(feriado.observed) : ''}</span>` : ''}
+            ${observado ? `<span class="cal-tag holiday">${observado.name} observed</span>` : ''}
+            ${registrados.length ? `<span class="cal-tag logged">Logged ${horas}</span>` : ''}
+        `;
+    }
+
+    /** 'YYYY-MM-DD' -> 'Fri Jul 3', sin pasar por new Date(cadena). */
+    diaCorto(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d)
+            .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     }
 
     selectCalendarDate(dateStr) {
@@ -2390,9 +2466,14 @@ class PoliceToolsApp {
         const dateDisplay = document.getElementById('selected-date-display');
         if (dateInput) dateInput.value = dateStr;
         if (dateDisplay) {
-            const date = new Date(dateStr);
+            // new Date('2026-11-10') se interpreta como UTC y en husos al oeste
+            // caia en el dia anterior. Se construye con las partes.
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const date = new Date(y, m - 1, d);
             dateDisplay.textContent = `- ${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
         }
+
+        this.renderCalendarDetail();
     }
 
     renderHolidays() {
@@ -2411,20 +2492,60 @@ class PoliceToolsApp {
         `).join('');
     }
 
+    /**
+     * Feriados federales del año.
+     *
+     * Estaban con la fecha fija de 2025 (`${year}-01-20` para el dia de Martin
+     * Luther King, `${year}-11-27` para Thanksgiving), asi que en cualquier
+     * otro año caian mal: en 2026 el de King es el 19 de enero y Thanksgiving
+     * el 26 de noviembre. Seis de los once son dias moviles y hay que
+     * calcularlos.
+     *
+     * Se devuelve la fecha como 'YYYY-MM-DD' construida a mano, sin pasar por
+     * new Date(cadena): eso se interpreta como UTC y en Puerto Rico (UTC-4)
+     * retrocedia un dia, con lo que Veterans Day aparecia el 10.
+     */
     getFederalHolidays(year) {
-        return [
-            { name: "New Year's Day", date: `${year}-01-01` },
-            { name: "Martin Luther King Jr. Day", date: `${year}-01-20` },
-            { name: "Presidents' Day", date: `${year}-02-17` },
-            { name: "Memorial Day", date: `${year}-05-26` },
-            { name: "Juneteenth", date: `${year}-06-19` },
-            { name: "Independence Day", date: `${year}-07-04` },
-            { name: "Labor Day", date: `${year}-09-01` },
-            { name: "Columbus Day", date: `${year}-10-13` },
-            { name: "Veterans Day", date: `${year}-11-11` },
-            { name: "Thanksgiving Day", date: `${year}-11-27` },
-            { name: "Christmas Day", date: `${year}-12-25` }
+        const iso = (m, d) => `${year}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+        // n-esimo dia de la semana del mes (0 = domingo)
+        const nEsimo = (mes, diaSemana, n) => {
+            const primero = new Date(year, mes, 1).getDay();
+            return 1 + ((diaSemana - primero + 7) % 7) + (n - 1) * 7;
+        };
+
+        // ultimo dia de la semana del mes
+        const ultimo = (mes, diaSemana) => {
+            const finDeMes = new Date(year, mes + 1, 0);
+            return finDeMes.getDate() - ((finDeMes.getDay() - diaSemana + 7) % 7);
+        };
+
+        const lista = [
+            { name: "New Year's Day", date: iso(0, 1), fijo: true },
+            { name: "Martin Luther King Jr. Day", date: iso(0, nEsimo(0, 1, 3)) },
+            { name: "Presidents' Day", date: iso(1, nEsimo(1, 1, 3)) },
+            { name: "Memorial Day", date: iso(4, ultimo(4, 1)) },
+            { name: "Juneteenth", date: iso(5, 19), fijo: true },
+            { name: "Independence Day", date: iso(6, 4), fijo: true },
+            { name: "Labor Day", date: iso(8, nEsimo(8, 1, 1)) },
+            { name: "Columbus Day", date: iso(9, nEsimo(9, 1, 2)) },
+            { name: "Veterans Day", date: iso(10, 11), fijo: true },
+            { name: "Thanksgiving Day", date: iso(10, nEsimo(10, 4, 4)) },
+            { name: "Christmas Day", date: iso(11, 25), fijo: true }
         ];
+
+        // Los de fecha fija que caen en fin de semana se observan el viernes
+        // anterior o el lunes siguiente. Para quien cobra el federal, el dia
+        // libre es el observado, no el nominal.
+        for (const h of lista) {
+            if (!h.fijo) continue;
+            const [y, m, d] = h.date.split('-').map(Number);
+            const dow = new Date(y, m - 1, d).getDay();
+            if (dow === 6) h.observed = iso(m - 1, d - 1);       // sabado -> viernes
+            else if (dow === 0) h.observed = iso(m - 1, d + 1);  // domingo -> lunes
+        }
+
+        return lista;
     }
 
     addShift(formData) {

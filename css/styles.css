@@ -1521,13 +1521,15 @@ body {
 }
 
 .calendar-nav {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     background: var(--bg-primary);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    font-size: 1.2rem;
-    color: var(--text-primary);
+    /* rgba(0,0,0,.1) es invisible sobre un fondo oscuro. Un gris neutro se
+       ve en los ocho temas. */
+    border: 1px solid rgba(128, 128, 128, 0.22);
+    border-radius: 12px;
+    font-size: 1rem;
+    color: var(--text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1541,86 +1543,190 @@ body {
     border-color: var(--accent-blue);
 }
 
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    margin-bottom: 8px;
+.calendar-nav:active {
+    transform: scale(0.94);
 }
 
-.calendar-day-header {
+/* ============================================
+   CALENDARIO DEL SHIFT TRACKER (#calendar-view)
+   ============================================
+
+   Todo va bajo #calendar-view a proposito. Habia dos calendarios usando los
+   mismos nombres de clase — este y el de Panama Schedule, mas abajo en este
+   archivo — y como .calendar-day se declaraba dos veces, ganaba siempre la
+   segunda. Este calendario se pintaba con los estilos del otro.
+
+   minmax(0, 1fr) en las dos rejillas, no 1fr: 1fr equivale a
+   minmax(auto, 1fr) y la pista no puede encogerse por debajo de su
+   contenido. El nombre del feriado dentro de la celda ("Thanksgiving")
+   estiraba la columna a 68 px, las siete sumaban 550 px y el sabado se salia
+   de la pantalla. Medido en noviembre de 2026, que es donde se vio. */
+
+#calendar-view .calendar-grid,
+#calendar-view .calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    /* El mismo gap en las dos, o las cabeceras no cuadran con las columnas */
+    gap: 4px;
+}
+
+#calendar-view .calendar-grid {
+    margin-bottom: 4px;
+}
+
+#calendar-view .calendar-day-header {
     text-align: center;
     font-size: 0.7rem;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    padding: 8px 4px;
+    padding: 6px 0;
 }
 
-.calendar-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-}
-
-.calendar-day {
+#calendar-view .calendar-day {
     aspect-ratio: 1;
+    min-height: 0;          /* con min-height la celda no podia encogerse */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
     background: var(--bg-primary);
-    border-radius: 8px;
+    border: 1px solid transparent;
+    border-radius: 9px;
     cursor: pointer;
-    transition: all 0.2s ease;
     position: relative;
-    min-height: 44px;
+    overflow: hidden;
+    font-variant-numeric: tabular-nums;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.calendar-day:hover {
-    background: rgba(66, 153, 225, 0.15);
+#calendar-view .calendar-day .day-number {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1;
 }
 
-.calendar-day.other-month {
-    color: var(--text-muted);
+/* Turno segun el patron: el color de fondo dice de un vistazo como viene el
+   mes. Atenuado, porque son 30 celdas y a plena saturacion marea. */
+#calendar-view .calendar-day.on-day {
+    background: rgba(59, 130, 246, 0.22);
+    color: var(--text-primary);
+}
+
+#calendar-view .calendar-day.on-night {
+    background: rgba(139, 92, 246, 0.22);
+    color: var(--text-primary);
+}
+
+#calendar-view .calendar-day.off {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+}
+
+#calendar-view .calendar-day.other-month {
     background: transparent;
+    color: var(--text-muted);
+    opacity: 0.35;
+    cursor: default;
 }
 
-.calendar-day.today {
-    background: var(--accent-blue);
-    color: white;
-    font-weight: 700;
+/* Hoy: aro, no relleno. Rellenar tapaba el color del turno, que es el dato
+   que se viene a mirar. */
+#calendar-view .calendar-day.today {
+    border-color: var(--accent-blue);
+    font-weight: 800;
 }
 
-.calendar-day.selected {
-    box-shadow: 0 0 0 2px var(--accent-blue);
+#calendar-view .calendar-day.selected {
+    box-shadow: inset 0 0 0 2px var(--accent-blue);
 }
 
-.calendar-day.has-shift::after {
-    content: '';
-    position: absolute;
-    bottom: 4px;
-    width: 4px;
-    height: 4px;
-    background: var(--accent-green);
+/* Marcas: feriado y turno ya registrado. Van en fila bajo el numero, asi que
+   un dia puede llevar las dos sin que se solapen. */
+#calendar-view .day-marks {
+    display: flex;
+    gap: 3px;
+    height: 5px;
+    align-items: center;
+}
+
+#calendar-view .day-marks i {
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
+    display: block;
 }
 
-.calendar-day.holiday .day-number {
-    position: relative;
+#calendar-view .mark-holiday { background: var(--accent-red); }
+#calendar-view .mark-logged  { background: var(--accent-green); }
+
+/* ---- Leyenda ---- */
+.cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(128, 128, 128, 0.18);
 }
 
-.calendar-day.holiday .day-number::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    background: var(--accent-red);
-    border-radius: 50%;
+.cal-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
 }
+
+.cal-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    display: block;
+    flex-shrink: 0;
+}
+
+.cal-swatch.day     { background: rgba(59, 130, 246, 0.5); }
+.cal-swatch.night   { background: rgba(139, 92, 246, 0.5); }
+.cal-swatch.off     { background: var(--bg-primary); box-shadow: inset 0 0 0 1.5px rgba(128, 128, 128, 0.6); }
+.cal-swatch.holiday { background: var(--accent-red); border-radius: 50%; width: 8px; height: 8px; }
+.cal-swatch.logged  { background: var(--accent-green); border-radius: 50%; width: 8px; height: 8px; }
+
+/* ---- Ficha del dia elegido ---- */
+.cal-detail {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.cal-detail[hidden] { display: none; }
+
+.cal-detail b {
+    flex: 1 1 100%;
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+.cal-tag {
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(128, 128, 128, 0.15);
+    color: var(--text-secondary);
+}
+
+.cal-tag.day     { background: rgba(59, 130, 246, 0.2);  color: var(--accent-blue); }
+.cal-tag.night   { background: rgba(139, 92, 246, 0.2);  color: var(--accent-purple); }
+.cal-tag.holiday { background: rgba(239, 68, 68, 0.18);  color: var(--accent-red); }
+.cal-tag.logged  { background: rgba(16, 185, 129, 0.18); color: var(--accent-green); }
 
 .day-number {
     font-size: 0.9rem;
@@ -3458,7 +3564,7 @@ body {
     padding: 0;
 }
 
-.calendar-header {
+#panama-view .calendar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -3466,13 +3572,13 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.calendar-header h3 {
+#panama-view .calendar-header h3 {
     font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
 }
 
-.calendar-nav {
+#panama-view .calendar-nav {
     width: 36px;
     height: 36px;
     border: none;
@@ -3485,11 +3591,11 @@ body {
     transition: all 0.2s ease;
 }
 
-.calendar-nav:hover {
+#panama-view .calendar-nav:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
-.calendar-nav svg {
+#panama-view .calendar-nav svg {
     width: 20px;
     height: 20px;
     stroke: var(--text-primary);
@@ -3535,14 +3641,14 @@ body {
     padding: 16px;
 }
 
-.calendar-weekdays {
+#panama-view .calendar-weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 8px;
     margin-bottom: 8px;
 }
 
-.calendar-weekdays span {
+#panama-view .calendar-weekdays span {
     text-align: center;
     font-size: 12px;
     font-weight: 600;
@@ -3550,14 +3656,14 @@ body {
     padding: 8px 0;
 }
 
-.calendar-days {
+#panama-view .calendar-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 8px;
     min-height: 200px;
 }
 
-.calendar-day {
+#panama-view .calendar-day {
     aspect-ratio: 1;
     display: flex;
     flex-direction: column;
@@ -3574,34 +3680,34 @@ body {
     min-height: 40px;
 }
 
-.calendar-day:hover {
+#panama-view .calendar-day:hover {
     transform: scale(1.05);
 }
 
-.calendar-day.other-month {
+#panama-view .calendar-day.other-month {
     opacity: 0.3;
 }
 
-.calendar-day.today {
+#panama-view .calendar-day.today {
     border: 2px solid var(--text-primary);
 }
 
-.calendar-day.on-day {
+#panama-view .calendar-day.on-day {
     background: var(--accent-blue);
     color: white;
 }
 
-.calendar-day.on-night {
+#panama-view .calendar-day.on-night {
     background: var(--accent-purple);
     color: white;
 }
 
-.calendar-day.off {
+#panama-view .calendar-day.off {
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
 }
 
-.day-number {
+#panama-view .day-number {
     font-size: 14px;
     font-weight: 600;
 }

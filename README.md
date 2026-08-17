@@ -116,6 +116,35 @@ hacen falta para arrancar. Se incluyen las fuentes sustitutas de pdf.js
 (`vendor/pdfjs-fonts/`) porque los formularios usan Helvetica sin embeber y
 sin ellas los campos rellenos saldrían vacíos.
 
+## Calendario
+
+Cada día se colorea con el turno que toca según el patrón de *Panama Schedule*
+(azul de día, violeta de noche, sin color libre), con punto rojo en los
+feriados y verde en los días que ya tienen horas registradas. Al tocar un día
+se abre la ficha, que es donde caben los nombres largos.
+
+Tres defectos que tenía:
+
+- **Se salía de la pantalla.** Las rejillas usaban `repeat(7, 1fr)`, y `1fr`
+  es `minmax(auto, 1fr)`: la columna no puede encogerse por debajo de su
+  contenido. El nombre del feriado dentro de la celda ("Thanksgiving")
+  estiraba la columna a 68 px, las siete sumaban 550 px y el sábado quedaba
+  fuera. Con `minmax(0, 1fr)` cabe desde 320 px.
+- **Dos calendarios con las mismas clases.** Este y el de *Panama Schedule*
+  declaraban `.calendar-day`, `.calendar-header` y `.calendar-nav` por
+  separado, y ganaba el segundo por estar más abajo en el archivo: este
+  calendario se pintaba con los estilos del otro. Cada uno va ahora acotado a
+  su vista.
+- **Los feriados estaban fijados a 2025.** Seis de los once son días móviles
+  y estaban escritos a mano (`${year}-01-20`, `${year}-11-27`), así que en
+  cualquier otro año caían mal: en 2026 el día de Martin Luther King es el 19
+  de enero y Thanksgiving el 26 de noviembre. Ahora se calculan, y los de
+  fecha fija que caen en fin de semana muestran el día observado.
+
+Las fechas ya no se construyen con `new Date('2026-11-11')`: eso se interpreta
+como UTC y en Puerto Rico (UTC−4) retrocedía un día, por lo que Veterans Day
+aparecía el 10.
+
 ## Temas
 
 Ocho paletas: cuatro oscuras (Midnight, Carbon, Forest, Tactical), tres claras
