@@ -1637,8 +1637,22 @@ body.keyboard-open .bottom-nav {
     cursor: pointer;
 }
 
+/* "Add to this shift" queda como pie del modal, fuera del bloque que
+   scrollea, asi que necesita su propio margen o toca los bordes */
 .cit-add {
-    margin-top: 16px;
+    margin: 12px 18px 18px;
+    width: calc(100% - 36px);
+}
+
+/* La X arriba del todo: los distintivos de la ley ocupan una o dos lineas
+   segun el caso, y centrada verticalmente quedaba descolgada. */
+#law-detail-modal .modal-header {
+    align-items: flex-start;
+    padding: 16px 18px 10px;
+}
+
+#law-detail-modal .close-btn {
+    margin-top: -4px;
 }
 
 /* ============================================

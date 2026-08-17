@@ -1464,6 +1464,15 @@ body {
     gap: 8px;
 }
 
+/* En columna: .detail-keywords era flex en fila, asi que la etiqueta
+   "Keywords:" y las pildoras se peleaban por el mismo renglon. */
+.detail-keywords {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
 .detail-keyword,
 .keywords-container .keyword {
     font-size: 0.8rem;
@@ -2288,10 +2297,15 @@ body {
    ley se cortaba a media frase y no habia forma de leer el resto: el texto
    largo quedaba debajo del boton "Add to this shift". min-height: 0 es lo que
    permite que un hijo flexible encoja por debajo de su contenido y scrollee
-   de verdad. */
+   de verdad.
+
+   El padding tampoco estaba: las tarjetas del detalle llevan esquinas
+   redondeadas y una barra de acento a la izquierda, y al ir pegadas al borde
+   del modal se les cortaba justo eso, que es lo que las hacia parecer rotas. */
 .modal-body {
     flex: 1 1 auto;
     min-height: 0;
+    padding: 4px 18px 18px;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
