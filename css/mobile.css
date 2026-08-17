@@ -1,0 +1,521 @@
+/* ============================================
+   POLICE TOOLS - Capa de optimizacion movil
+   Se carga despues de styles.css y solo corrige lo que falla en telefono.
+   ============================================ */
+
+:root {
+    /* Alturas seguras reales. env() vale 0 fuera de PWA, por eso el max(). */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+
+    /* Minimo recomendado para un objetivo tactil */
+    --touch-target: 44px;
+}
+
+/* ============================================
+   1. BASE TACTIL
+   ============================================ */
+
+html {
+    /* Evita el rebote de la pagina completa en iOS dentro de la PWA */
+    overscroll-behavior-y: none;
+}
+
+body {
+    /* dvh sigue el alto real cuando aparece/desaparece la barra del navegador */
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    /* Sin resaltado gris al tocar: se sustituye por estados :active propios */
+    -webkit-tap-highlight-color: transparent;
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+}
+
+/* Nada de seleccion accidental de texto al mantener pulsado un control */
+button,
+.menu-card,
+.icon-btn,
+.back-btn,
+.filter-btn,
+.calendar-day,
+.tab-btn,
+.menu-dropdown-item,
+.vehicle-option,
+.law-item {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+}
+
+/* El texto que el oficial necesita copiar (citas legales, multas) si se
+   puede seleccionar */
+.law-detail-content,
+.law-detail-content *,
+.detail-section,
+input,
+textarea {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+}
+
+/* ============================================
+   2. HOVER: solo en dispositivos con puntero real
+   En tactil, :hover se queda "pegado" tras un toque y deja tarjetas
+   levantadas o con color de foco hasta que tocas en otro sitio.
+   ============================================ */
+@media (hover: none) {
+    .add-row-btn:hover, .back-btn:hover, .btn-outline:hover, .btn-primary:hover,
+    .btn-secondary:hover, .calendar-day:hover, .calendar-nav:hover,
+    .checkbox-label:hover, .close-btn:hover, .document-action-btn.delete:hover,
+    .document-action-btn:hover, .document-card:hover, .filter-btn:hover,
+    .icon-btn:hover, .journal-entry-delete:hover, .law-item:hover, .logo:hover,
+    .menu-card:hover, .menu-dropdown-item:hover, .notification-delete:hover,
+    .notification-item:hover, .notifications-btn.create-btn:hover,
+    .notifications-btn.test-btn:hover, .notifications-btn:hover,
+    .pattern-edit-day:hover, .remove-row:hover, .save-entry-btn:hover,
+    .saved-entry-btn.delete:hover, .saved-entry-btn.edit:hover,
+    .saved-entry-card:hover, .shift-arrow:hover, .shift-card:hover,
+    .shift-item .shift-edit-btn:hover, .team-template-btn:hover,
+    .vehicle-option span:hover {
+        transform: none;
+        box-shadow: inherit;
+    }
+}
+
+/* Respuesta tactil inmediata: se hunde al tocar */
+.menu-card:active,
+.document-card:active,
+.saved-entry-card:active,
+.law-item:active,
+.shift-card:active,
+.notification-item:active,
+.menu-dropdown-item:active {
+    transform: scale(0.975);
+    transition: transform 0.06s ease-out;
+}
+
+.btn:active,
+.icon-btn:active,
+.back-btn:active,
+.filter-btn:active,
+.add-row-btn:active,
+.save-entry-btn:active,
+.document-action-btn:active,
+.calendar-nav:active,
+.team-template-btn:active {
+    transform: scale(0.94);
+    opacity: 0.85;
+    transition: transform 0.06s ease-out, opacity 0.06s ease-out;
+}
+
+/* ============================================
+   3. OBJETIVOS TACTILES
+   38-40px queda por debajo del minimo; se amplia el area sin cambiar
+   el tamaño visual usando un pseudo-elemento.
+   ============================================ */
+.icon-btn,
+.back-btn,
+.close-btn,
+.calendar-nav,
+.remove-row,
+.document-action-btn,
+.saved-entry-btn,
+.notification-delete,
+.journal-entry-delete,
+.shift-item .shift-edit-btn {
+    position: relative;
+}
+
+.icon-btn::after,
+.back-btn::after,
+.close-btn::after,
+.calendar-nav::after,
+.remove-row::after,
+.document-action-btn::after,
+.saved-entry-btn::after,
+.notification-delete::after,
+.journal-entry-delete::after,
+.shift-item .shift-edit-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    transform: translate(-50%, -50%);
+    /* Solo amplia el area de toque, no se ve */
+}
+
+/* Botones principales: comodos con el pulgar */
+.btn {
+    min-height: 50px;
+    font-size: 1rem;
+}
+
+.filter-btn,
+.tab-btn,
+.team-template-btn,
+.add-row-btn,
+.save-entry-btn,
+.notifications-btn {
+    min-height: var(--touch-target);
+}
+
+/* Los botones del panel de notificaciones median 22px de alto */
+.notifications-btn {
+    padding: 10px 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Checkbox e interruptores: 22px es dificil de acertar en marcha */
+.checkbox-label {
+    min-height: var(--touch-target);
+    padding: 12px 16px;
+}
+
+.checkbox-label input[type="checkbox"],
+.inspection-row input[type="checkbox"] {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.inspection-row {
+    min-height: var(--touch-target);
+}
+
+/* ============================================
+   4. FORMULARIOS
+   ============================================ */
+
+/* iOS hace zoom automatico al enfocar un input con fuente < 16px y luego
+   no vuelve al nivel anterior. 16px lo evita sin bloquear el gesto de zoom. */
+/* :not() en vez de listar type="...": muchos inputs del formulario no
+   declaran el atributo type, y un selector [type="text"] no los alcanza.
+   Se repite con .form-group porque styles.css usa .form-group input, que
+   tiene mas especificidad que un selector de elemento suelto. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]),
+select,
+textarea,
+.form-group input:not([type="checkbox"]):not([type="radio"]),
+.form-group select,
+.form-group textarea,
+.entry-field input:not([type="checkbox"]):not([type="radio"]),
+.entry-field select,
+.entry-field textarea,
+.notif-input,
+.notif-textarea {
+    font-size: 16px;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+}
+
+.form-group textarea,
+textarea {
+    min-height: 110px;
+    line-height: 1.5;
+}
+
+.form-group select {
+    /* Deja sitio a la flecha sin que el texto la pise */
+    padding-right: 46px;
+    background-position: right 16px center;
+}
+
+/* El teclado tapa el campo enfocado: se marca con claridad cual es */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28);
+}
+
+/* Foco visible solo para teclado/navegacion, no al tocar */
+:focus-visible {
+    outline: 3px solid var(--accent-light-blue);
+    outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+.menu-card:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Los date/time nativos de iOS se salen del contenedor */
+input[type="date"],
+input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    max-width: 100%;
+}
+
+/* ============================================
+   5. SCROLL
+   ============================================ */
+.tab-view,
+.modal-content,
+.law-detail-modal,
+.notifications-panel,
+.laws-list,
+.saved-entries-list {
+    /* Inercia en iOS y sin arrastrar la pagina de detras al llegar al final */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+.tab-view {
+    /* Sobre la barra de gestos. Sin padding-top: la cabecera de la vista es
+       sticky y se pegaria por debajo del relleno, dejando una franja hueca.
+       El inset superior lo aplica .view-header. */
+    padding-bottom: calc(var(--safe-bottom) + 24px);
+    /* La vista ocupa el alto real disponible */
+    height: 100dvh;
+}
+
+.view-header {
+    /* La cabecera pegajosa tiene que respetar el notch */
+    padding-top: var(--safe-top);
+    z-index: 10;
+}
+
+/* Deja aire al final de cada formulario para que el ultimo campo no quede
+   debajo del teclado */
+.tab-view form,
+.tab-view .form-section:last-child {
+    padding-bottom: 24px;
+}
+
+/* ============================================
+   6. CABECERA Y NAVEGACION
+   ============================================ */
+.app-header {
+    padding-left: max(20px, var(--safe-left));
+    padding-right: max(20px, var(--safe-right));
+}
+
+.menu-dropdown,
+.notifications-panel {
+    max-height: calc(100dvh - var(--header-height) - var(--safe-top) - 32px);
+    overflow-y: auto;
+}
+
+.menu-dropdown-item {
+    min-height: 52px;
+}
+
+/* ============================================
+   7. REJILLA PRINCIPAL
+   ============================================ */
+@media (max-width: 380px) {
+    /* Telefonos estrechos: una columna se lee mejor que dos apretadas */
+    .menu-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* En horizontal el alto sobra poco: se compacta lo alto */
+@media (orientation: landscape) and (max-height: 480px) {
+    .shift-card {
+        padding: 14px 18px;
+    }
+
+    .shift-day {
+        font-size: 1.5rem;
+    }
+
+    .menu-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .menu-card {
+        padding: 14px;
+    }
+
+    .app-header {
+        --header-height: 52px;
+    }
+}
+
+/* ============================================
+   8. MODALES A PANTALLA COMPLETA EN MOVIL
+   Un modal centrado con scroll interno es incomodo con una mano;
+   como hoja inferior el pulgar llega a todo.
+   ============================================ */
+@media (max-width: 600px) {
+    .modal-content,
+    .law-detail-modal {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        width: 100%;
+        max-width: 100%;
+        max-height: 88dvh;
+        border-radius: 20px 20px 0 0;
+        padding-bottom: var(--safe-bottom);
+        animation: sheetUp 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    /* Asa visual: indica que es una hoja deslizable */
+    .modal-content::before,
+    .law-detail-modal::before {
+        content: '';
+        position: sticky;
+        top: 8px;
+        display: block;
+        width: 40px;
+        height: 4px;
+        margin: 8px auto 4px;
+        border-radius: 2px;
+        background: var(--text-muted);
+        opacity: 0.5;
+        z-index: 2;
+    }
+}
+
+@keyframes sheetUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* ============================================
+   9. INDICADOR DE CONEXION
+   ============================================ */
+/* Va abajo, no arriba: arriba chocaria con la cabecera de la app y con la
+   cabecera pegajosa de cada vista, que estan en capas distintas. Abajo
+   ademas queda fuera del recorrido del pulgar. */
+.offline-banner {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px calc(8px + var(--safe-bottom));
+    background: var(--accent-orange);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transform: translateY(120%);
+    transition: transform 0.25s ease;
+}
+
+.offline-banner.visible {
+    transform: translateY(0);
+}
+
+.offline-banner svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   10. AVISO DE ACTUALIZACION
+   ============================================ */
+.update-toast {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--safe-bottom) + 16px);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-lg);
+    font-size: 0.9rem;
+    transform: translateY(200%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.update-toast.visible {
+    transform: translateY(0);
+}
+
+.update-toast button {
+    margin-left: auto;
+    flex-shrink: 0;
+    min-height: 40px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent-blue);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* ============================================
+   11. TECLADO EN PANTALLA
+   Cuando el teclado esta abierto se oculta lo que estorba y se garantiza
+   que el campo enfocado quede visible.
+   ============================================ */
+body.keyboard-open .app-header {
+    /* Recuperar los 64px de cabecera es mucho espacio con el teclado abierto */
+    position: absolute;
+}
+
+body.keyboard-open .fab,
+body.keyboard-open .offline-banner {
+    display: none;
+}
+
+/* ============================================
+   12. LEGIBILIDAD EN EXTERIOR
+   Un turno de dia significa leer la pantalla bajo el sol.
+   ============================================ */
+@media (prefers-contrast: more) {
+    :root {
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+    }
+
+    [data-theme="light"] {
+        --text-secondary: #1e293b;
+        --text-muted: #334155;
+    }
+
+    .menu-card,
+    .document-card,
+    .saved-entry-card {
+        border: 2px solid var(--text-muted);
+    }
+}
+
+/* ============================================
+   13. MOVIMIENTO REDUCIDO
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ============================================
+   14. IMPRESION
+   ============================================ */
+@media print {
+    .offline-banner,
+    .update-toast {
+        display: none !important;
+    }
+}

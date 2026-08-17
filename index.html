@@ -1,0 +1,2242 @@
+<!DOCTYPE html><html lang="es"><head>
+    <meta charset="UTF-8"/>
+    <!-- viewport-fit=cover: usa el area completa en pantallas con notch.
+         Se permite zoom (accesibilidad); el zoom-al-enfocar de iOS se evita
+         con font-size >= 16px en los inputs, no bloqueando el gesto. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)"/>
+    <meta name="theme-color" content="#1e3a5f" media="(prefers-color-scheme: light)"/>
+    <meta name="color-scheme" content="dark light"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="Police Tools"/>
+    <meta name="format-detection" content="telephone=no"/>
+    <title>Police Tools - Law Enforcement Productivity Suite</title>
+    <link rel="stylesheet" href="css/styles.css"/>
+    <link rel="stylesheet" href="css/mobile.css"/>
+    <link rel="manifest" href="manifest.json"/>
+    <link rel="apple-touch-icon" href="assets/icon-192x192.png"/>
+    <!-- Librerias servidas localmente: la app debe funcionar sin red -->
+    <script src="vendor/pdf-lib.min.js"></script>
+    <script src="vendor/jszip.min.js"></script>
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M12 8v4M12 16h.01"></path>
+                    </svg>
+                </div>
+                <div class="brand">
+                    <h1>Police Tools</h1>
+                    <span>Law Enforcement Suite</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="notifications-btn" aria-label="Notifications">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="badge" id="notification-badge" style="display: none;">0</span>
+                </button>
+                <button class="icon-btn" id="menu-btn" aria-label="Menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-panama">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <span>Panama Schedule</span>
+                </div>
+                <div class="menu-dropdown-item" id="menu-journal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Personal Journal</span>
+                </div>
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Shift Badge -->
+            <div class="shift-badge-container">
+                <span class="shift-badge-pill">Mid Shift (1730-0630)</span>
+            </div>
+            
+            <!-- Shift Info Card -->
+            <section class="shift-card">
+                <div class="shift-info">
+                    <h2 class="shift-label">TODAY&#39;S SHIFT</h2>
+                    <p class="shift-day" id="current-day">Tuesday</p>
+                    <p class="shift-date" id="current-date">Feb 24, 2026</p>
+                </div>
+                <button class="shift-arrow" id="calendar-shortcut">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+            </section>
+
+            <!-- Menu Grid -->
+            <section class="menu-grid">
+                <div class="menu-card" data-tab="law-library">
+                    <div class="card-icon law">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                    </div>
+                    <h3>Law Library</h3>
+                    <p>Legal Reference Database</p>
+                </div>
+
+                <div class="menu-card" data-tab="daily-reports">
+                    <div class="card-icon reports">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Daily Reports</h3>
+                    <p>View &amp; Manage Documents</p>
+                </div>
+
+                <div class="menu-card" data-tab="guard-mount">
+                    <div class="card-icon guard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h3>Guard Mount</h3>
+                    <p>Personnel Roster</p>
+                </div>
+
+                <div class="menu-card" data-tab="interview">
+                    <div class="card-icon interview">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3>Interview</h3>
+                    <p>Worksheet Forms</p>
+                </div>
+
+                <div class="menu-card" data-tab="patrol-log">
+                    <div class="card-icon patrol">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <h3>Patrol Log</h3>
+                    <p>Activity Log</p>
+                </div>
+
+                <div class="menu-card" data-tab="pmcs">
+                    <div class="card-icon pmcs">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
+                            <circle cx="6.5" cy="16.5" r="2.5"></circle>
+                            <circle cx="16.5" cy="16.5" r="2.5"></circle>
+                        </svg>
+                    </div>
+                    <h3>PMCS</h3>
+                    <p>Vehicle Inspection</p>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <p>Police Tools v1.0 - Law Enforcement Productivity Suite</p>
+            </footer>
+        </main>
+
+        <!-- Tab Views (Hidden by default) -->
+        
+        <!-- Law Library View -->
+        <section class="tab-view" id="law-library-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Law Library</h2>
+            </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+            <div class="view-content">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="law-search" placeholder="Search codes, titles, keywords..."/>
+                </div>
+                <div class="category-filters">
+                    <button class="filter-btn active" data-category="all">All</button>
+                    <button class="filter-btn" data-category="pr-law-22">PR Law 22</button>
+                    <button class="filter-btn" data-category="pr-penal">PR Penal code</button>
+                    <button class="filter-btn" data-category="ftb-traffic">FT Buchanan Traffic code</button>
+                    <button class="filter-btn" data-category="federal-penal">Federal penal code</button>
+                    <button class="filter-btn" data-category="ucmj">UCMJ</button>
+                </div>
+                <div class="laws-list" id="laws-list">
+                    <!-- Laws will be populated here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Daily Reports View -->
+        <section class="tab-view" id="daily-reports-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Daily Reports</h2>
+            </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+            <div class="view-content">
+                <!-- Date Filter -->
+                <div class="date-filter" style="margin-bottom: 16px; padding: 12px; background: var(--bg-card); border-radius: var(--radius-sm);">
+                    <label style="display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-secondary);">Filter by Date</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="date" id="reports-date-filter" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-primary); color: var(--text-primary);"/>
+                        <button type="button" id="clear-date-filter" class="btn btn-secondary" style="padding: 10px 16px;">Clear</button>
+                    </div>
+                </div>
+                <div class="reports-list" id="reports-list">
+                    <div class="empty-entries" id="empty-reports">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <p>No reports saved yet. Generate and save PDFs from the forms.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Guard Mount View -->
+        <section class="tab-view" id="guard-mount-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Guard Mount</h2>
+            </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+            <div class="view-content">
+                <!-- Create New Form Button -->
+                <button type="button" class="create-new-form-btn" onclick="app.createNewForm('guardmount')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>CREATE NEW FORM</span>
+                </button>
+                <form id="guardmount-form" class="form-sections">
+                    <!-- Header Info -->
+                    <div class="form-section">
+                        <h3>Inspection Details</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" name="date" required=""/>
+                            </div>
+                            <div class="form-group">
+                                <label>Hours</label>
+                                <input type="text" name="hours" placeholder="e.g., 0800-1600"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>From Shift Supervisor</label>
+                            <input type="text" name="from_shift_supervisor" placeholder="Name / Rank" required=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>To Desk Operation Officer</label>
+                            <input type="text" name="to_desk_officer" placeholder="Name / Rank" required=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Guardmount Conducted Inspection</label>
+                            <input type="text" name="guardmount_conducted" required=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Inspection Conducted At</label>
+                            <input type="text" name="inspection_location" required=""/>
+                        </div>
+                    </div>
+
+                    <!-- Personnel Entries -->
+                    <div class="form-section">
+                        <h3>Personnel Entry</h3>
+                        
+                        <!-- Entry Input Card -->
+                        <div class="entry-input-card">
+                            <div class="entry-grid personnel-entry-grid">
+                                <div class="name-row">
+                                    <div class="entry-field">
+                                        <label>Rank</label>
+                                        <input type="text" id="person-rank" placeholder="e.g., SGT, CPL"/>
+                                    </div>
+                                    <div class="entry-field">
+                                        <label>Name</label>
+                                        <input type="text" id="person-name" placeholder="Full name"/>
+                                    </div>
+                                </div>
+                                <div class="details-row">
+                                    <div class="entry-field">
+                                        <label>Duty Position</label>
+                                        <input type="text" id="person-duty" placeholder="e.g., Desk Officer"/>
+                                    </div>
+                                    <div class="entry-field">
+                                        <label>Appearance</label>
+                                        <select id="person-appearance">
+                                            <option value="S">S - Satisfactory</option>
+                                            <option value="U">U - Unsatisfactory</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="vehicle-row">
+                                    <div class="entry-field">
+                                        <label>Vehicle</label>
+                                        <input type="text" id="person-vehicle" placeholder="Vehicle #"/>
+                                    </div>
+                                    <div class="entry-field">
+                                        <label>Radio #</label>
+                                        <input type="text" id="person-radio" placeholder="Radio number"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="save-entry-btn" id="save-personnel-entry">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                                Save Entry
+                            </button>
+                        </div>
+                        
+                        <!-- Team Template Buttons -->
+                        <div class="section-actions">
+                            <button type="button" class="btn btn-sm btn-secondary team-template-btn" id="save-team-a">Save as Team A</button>
+                            <button type="button" class="btn btn-sm btn-secondary team-template-btn" id="load-team-a">Load Team A</button>
+                            <button type="button" class="btn btn-sm btn-secondary team-template-btn" id="save-team-b">Save as Team B</button>
+                            <button type="button" class="btn btn-sm btn-secondary team-template-btn" id="load-team-b">Load Team B</button>
+                        </div>
+                        
+                        <!-- Saved Entries List -->
+                        <div class="saved-entries-list" id="saved-personnel-list">
+                            <div class="empty-entries">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                                <p>No personnel entries yet. Add your first entry above.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trainer Section -->
+                    <div class="form-section">
+                        <h3>Trainer Information</h3>
+                        <div class="form-group">
+                            <label>Trainer</label>
+                            <input type="text" name="trainer"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Trainer Subject</label>
+                            <input type="text" name="trainer_subject"/>
+                        </div>
+                    </div>
+
+                    <!-- Signatures -->
+                    <div class="form-section">
+                        <h3>Signatures</h3>
+                        <div class="form-group">
+                            <label>Shift Supervisor Name</label>
+                            <input type="text" name="supervisor_name"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Rank</label>
+                            <input type="text" name="supervisor_rank"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Shift Supervisor Signature</label>
+                            <input type="text" name="supervisor_signature" placeholder="Type name to sign"/>
+                        </div>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="form-section">
+                        <h3>Remarks</h3>
+                        <div class="form-group">
+                            <textarea name="remarks" rows="4" placeholder="Enter any observations or remarks..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions four-buttons">
+                        <button type="button" class="btn btn-secondary" id="guardmount-preview">Preview</button>
+                        <button type="button" class="btn btn-secondary" id="guardmount-share">Share</button>
+                        <button type="button" class="btn btn-secondary" id="guardmount-save">Save</button>
+                        <button type="button" class="btn btn-primary" id="guardmount-download">Download PDF</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Interview Worksheet View -->
+        <section class="tab-view" id="interview-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Interview Worksheet</h2>
+            </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+            <div class="view-content">
+                <!-- Create New Form Button -->
+                <button type="button" class="create-new-form-btn" onclick="app.createNewForm('interview')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>CREATE NEW FORM</span>
+                </button>
+                <form id="interview-form" class="form-sections">
+                    <!-- Personal Information -->
+                    <div class="form-section">
+                        <h3>Personal Information</h3>
+                        <div class="form-row three-col">
+                            <div class="form-group">
+                                <label>Last Name</label>
+                                <input type="text" name="last_name" required=""/>
+                            </div>
+                            <div class="form-group">
+                                <label>First Name</label>
+                                <input type="text" name="first_name" required=""/>
+                            </div>
+                            <div class="form-group">
+                                <label>Middle Name</label>
+                                <input type="text" name="middle_name"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>SSN</label>
+                                <input type="text" name="ssn" placeholder="XXX-XX-XXXX"/>
+                            </div>
+                            <div class="form-group">
+                                <label>DOB</label>
+                                <input type="date" name="dob"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Rank</label>
+                                <input type="text" name="rank"/>
+                            </div>
+                            <div class="form-group">
+                                <label>MACOM</label>
+                                <input type="text" name="macom"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Place of Birth</label>
+                            <input type="text" name="pob_city" placeholder="City"/>
+                        </div>
+                        <div class="form-row three-col">
+                            <div class="form-group">
+                                <label>State</label>
+                                <input type="text" name="pob_state"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Country</label>
+                                <input type="text" name="pob_country"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Cadency</label>
+                                <input type="text" name="cadency"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="form-section">
+                        <h3>Contact Information</h3>
+                        <div class="form-group">
+                            <label>Home Telephone</label>
+                            <input type="tel" name="home_tele"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Cell Telephone</label>
+                            <input type="tel" name="cell_tele"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Primary Business Telephone</label>
+                            <input type="tel" name="business_tele"/>
+                        </div>
+                    </div>
+
+                    <!-- Addresses -->
+                    <div class="form-section">
+                        <h3>Addresses</h3>
+                        <div class="form-group">
+                            <label>Unit Address</label>
+                            <input type="text" name="unit_street" placeholder="Street"/>
+                        </div>
+                        <div class="form-row three-col">
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" name="unit_city"/>
+                            </div>
+                            <div class="form-group">
+                                <label>State</label>
+                                <input type="text" name="unit_state"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Country</label>
+                                <input type="text" name="unit_country"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Resident Address</label>
+                            <input type="text" name="resident_street" placeholder="Street"/>
+                        </div>
+                        <div class="form-row three-col">
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" name="resident_city"/>
+                            </div>
+                            <div class="form-group">
+                                <label>State</label>
+                                <input type="text" name="resident_state"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Country</label>
+                                <input type="text" name="resident_country"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sponsor Information -->
+                    <div class="form-section">
+                        <h3>Sponsor Information</h3>
+                        <div class="form-row three-col">
+                            <div class="form-group">
+                                <label>Sponsor Last</label>
+                                <input type="text" name="sponsor_last"/>
+                            </div>
+                            <div class="form-group">
+                                <label>First</label>
+                                <input type="text" name="sponsor_first"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Middle</label>
+                                <input type="text" name="sponsor_middle"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Sponsor SSN</label>
+                                <input type="text" name="sponsor_ssn"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Sponsor Rank</label>
+                                <input type="text" name="sponsor_rank"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Sponsor Unit Address</label>
+                            <input type="text" name="sponsor_unit_street" placeholder="Street"/>
+                        </div>
+                        <div class="form-row three-col">
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" name="sponsor_city"/>
+                            </div>
+                            <div class="form-group">
+                                <label>State</label>
+                                <input type="text" name="sponsor_state"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Country</label>
+                                <input type="text" name="sponsor_country"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Physical Characteristics -->
+                    <div class="form-section">
+                        <h3>Physical Characteristics</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Sex</label>
+                                <select name="sex">
+                                    <option value="">Select</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Height</label>
+                                <input type="text" name="height" placeholder="e.g., 5&#39;10\" "=""/>
+                            </div>
+                            <div class="form-group">
+                                <label>Weight</label>
+                                <input type="text" name="weight" placeholder="lbs"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Eye Color</label>
+                                <input type="text" name="eye_color"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Build</label>
+                                <input type="text" name="build"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Complexion</label>
+                                <input type="text" name="complexion"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Hair Style</label>
+                                <input type="text" name="hair_style"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Hair Color</label>
+                                <input type="text" name="hair_color"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Facial Hair</label>
+                                <input type="text" name="facial_hair"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Glasses</label>
+                            <select name="glasses">
+                                <option value="">Select</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Additional Information -->
+                    <div class="form-section">
+                        <h3>Additional Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Marital Status</label>
+                                <input type="text" name="marital_status"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Age</label>
+                                <input type="number" name="age"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Race</label>
+                                <input type="text" name="race"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Ethnicity</label>
+                                <input type="text" name="ethnicity"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Citizenship</label>
+                                <input type="text" name="citizenship"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Education</label>
+                                <input type="text" name="education"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Fingerprints</label>
+                                <select name="fingerprints">
+                                    <option value="">Select</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Combat Deploys</label>
+                                <input type="text" name="combat_deploys"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Military Information -->
+                    <div class="form-section">
+                        <h3>Military Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>MOS</label>
+                                <input type="text" name="mos"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Clearance</label>
+                                <input type="text" name="clearance"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Photographed</label>
+                                <select name="photographed">
+                                    <option value="">Select</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>ETS Date</label>
+                                <input type="date" name="ets_date"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Fugitive</label>
+                                <select name="fugitive">
+                                    <option value="">Select</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Juvenile</label>
+                                <select name="juvenile">
+                                    <option value="">Select</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Demeanor</label>
+                                <input type="text" name="demeanor"/>
+                            </div>
+                            <div class="form-group">
+                                <label>PCS/DROS</label>
+                                <input type="text" name="pcs_dros"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Deceased</label>
+                            <select name="deceased">
+                                <option value="">Select</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="form-section">
+                        <h3>Remarks (Page 2)</h3>
+                        <div class="form-group">
+                            <textarea name="remarks" rows="6" placeholder="Enter remarks..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions four-buttons">
+                        <button type="button" class="btn btn-secondary" id="interview-preview">Preview</button>
+                        <button type="button" class="btn btn-secondary" id="interview-share">Share</button>
+                        <button type="button" class="btn btn-secondary" id="interview-save">Save</button>
+                        <button type="button" class="btn btn-primary" id="interview-download">Download PDF</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Patrol Log View -->
+        <section class="tab-view" id="patrol-log-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Patrol Log</h2>
+            </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+            <div class="view-content">
+                <!-- Create New Form Button -->
+                <button type="button" class="create-new-form-btn" onclick="app.createNewForm('patrol')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>CREATE NEW FORM</span>
+                </button>
+                <form id="patrol-form" class="form-sections">
+                    <!-- Shift Info -->
+                    <div class="form-section">
+                        <h3>Shift Information</h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="shift_days" value="X"/>
+                                <span>DAYS</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="shift_swings" value="X"/>
+                                <span>SWINGS</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="shift_mid" value="X"/>
+                                <span>MID</span>
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Patrol</label>
+                                <input type="text" name="patrol"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" name="date" required=""/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Police Name</label>
+                                <input type="text" name="police_name" required=""/>
+                            </div>
+                            <div class="form-group">
+                                <label>MID</label>
+                                <input type="text" name="mid"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Vehicle</label>
+                                <input type="text" name="vehicle"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Radio No.</label>
+                                <input type="text" name="radio_no"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mileage -->
+                    <div class="form-section">
+                        <h3>Mileage</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Beginning</label>
+                                <input type="number" name="beginning_mileage" id="beginning_mileage"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Ending</label>
+                                <input type="number" name="ending_mileage" id="ending_mileage"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Total</label>
+                                <input type="text" name="total_mileage" id="total_mileage" readonly=""/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fuel &amp; Maintenance -->
+                    <div class="form-section">
+                        <h3>Fuel &amp; Maintenance</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Fuel (LTR/GAL)</label>
+                                <input type="text" name="fuel"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Oil (QTR)</label>
+                                <input type="text" name="oil"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Other</label>
+                            <input type="text" name="other_maintenance"/>
+                        </div>
+                        <div class="form-group">
+                            <label>GSA or Credit Card Total Cost</label>
+                            <input type="text" name="fuel_cost"/>
+                        </div>
+                    </div>
+
+                    <!-- Signatures -->
+                    <div class="form-section">
+                        <h3>Signatures</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>1. PRINT</label>
+                                <input type="text" name="sig1_print"/>
+                            </div>
+                            <div class="form-group">
+                                <label>SIGN</label>
+                                <input type="text" name="sig1_sign" placeholder="Type name"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>2. PRINT</label>
+                                <input type="text" name="sig2_print"/>
+                            </div>
+                            <div class="form-group">
+                                <label>SIGN</label>
+                                <input type="text" name="sig2_sign" placeholder="Type name"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>3. P/S PRINT</label>
+                                <input type="text" name="sig3_print"/>
+                            </div>
+                            <div class="form-group">
+                                <label>SIGN</label>
+                                <input type="text" name="sig3_sign" placeholder="Type name"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Traffic Citations -->
+                    <div class="form-section">
+                        <h3>Traffic Citations Issued This Shift</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Moving</label>
+                                <input type="number" name="citations_moving" value="0"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Non Moving</label>
+                                <input type="number" name="citations_nonmoving" value="0"/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>DD FM 1805</label>
+                                <input type="number" name="dd_fm_1805" value="0"/>
+                            </div>
+                            <div class="form-group">
+                                <label>DA FM 1408</label>
+                                <input type="number" name="da_fm_1408" value="0"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Verbal Warning</label>
+                            <input type="number" name="verbal_warning" value="0"/>
+                        </div>
+                    </div>
+
+                    <!-- Comments -->
+                    <div class="form-section">
+                        <h3>Comments</h3>
+                        <div class="form-group">
+                            <textarea name="comments" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Mission Entries -->
+                    <div class="form-section">
+                        <h3>Mission Entries</h3>
+                        
+                        <!-- Entry Input Card -->
+                        <div class="entry-input-card">
+                            <div class="entry-grid mission-entry-grid">
+                                <div class="time-row">
+                                    <div class="entry-field">
+                                        <label>IN (HHMM)</label>
+                                        <input type="text" id="mission-time-in" placeholder="0800" maxlength="4" inputmode="numeric"/>
+                                    </div>
+                                    <div class="entry-field">
+                                        <label>OUT (HHMM)</label>
+                                        <input type="text" id="mission-time-out" placeholder="1600" maxlength="4" inputmode="numeric"/>
+                                    </div>
+                                </div>
+                                <div class="entry-field full-width">
+                                    <label>Mission Description</label>
+                                    <textarea id="mission-description" rows="2" placeholder="Who, What, Where, Why..."></textarea>
+                                </div>
+                                <div class="entry-field full-width">
+                                    <label>Remarks/Disposition</label>
+                                    <input type="text" id="mission-remarks" placeholder="Outcome, notes, etc."/>
+                                </div>
+                            </div>
+                            <button type="button" class="save-entry-btn" id="save-mission-entry">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                Save Entry
+                            </button>
+                        </div>
+                        
+                        <!-- Saved Entries List -->
+                        <div class="saved-entries-list" id="saved-missions-list">
+                            <div class="empty-entries">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path>
+                                </svg>
+                                <p>No mission entries yet. Add your first entry above.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions four-buttons">
+                        <button type="button" class="btn btn-secondary" id="patrol-preview">Preview</button>
+                        <button type="button" class="btn btn-secondary" id="patrol-share">Share</button>
+                        <button type="button" class="btn btn-secondary" id="patrol-save">Save</button>
+                        <button type="button" class="btn btn-primary" id="patrol-download">Download PDF</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- PMCS View -->
+        <section class="tab-view" id="pmcs-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>PMCS - Vehicle Inspection</h2>
+            </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+            <div class="view-content">
+                <!-- Create New Form Button -->
+                <button type="button" class="create-new-form-btn" onclick="app.createNewForm('pmcs')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>CREATE NEW FORM</span>
+                </button>
+                <form id="pmcs-form" class="form-sections">
+                    <!-- Vehicle Selection -->
+                    <div class="form-section">
+                        <h3>Select Vehicle</h3>
+                        <div class="vehicle-selector">
+                            <label class="vehicle-option">
+                                <input type="radio" name="vehicle_type" value="explorer" checked=""/>
+                                <span>Explorer</span>
+                            </label>
+                            <label class="vehicle-option">
+                                <input type="radio" name="vehicle_type" value="taurus"/>
+                                <span>Taurus</span>
+                            </label>
+                            <label class="vehicle-option">
+                                <input type="radio" name="vehicle_type" value="durango"/>
+                                <span>Durango</span>
+                            </label>
+                            <label class="vehicle-option">
+                                <input type="radio" name="vehicle_type" value="f150"/>
+                                <span>F-150</span>
+                            </label>
+                            <label class="vehicle-option">
+                                <input type="radio" name="vehicle_type" value="custom"/>
+                                <span>Custom</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Header Info -->
+                    <div class="form-section">
+                        <h3>Inspection Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Shift</label>
+                                <input type="text" name="shift" required=""/>
+                            </div>
+                            <div class="form-group">
+                                <label>Unit</label>
+                                <input type="text" name="unit" required=""/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" name="date" required=""/>
+                            </div>
+                            <div class="form-group">
+                                <label>Vehicle #</label>
+                                <input type="text" name="vehicle_number" required=""/>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Mileage Out</label>
+                                <input type="number" name="mileage_out"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Mileage In</label>
+                                <input type="number" name="mileage_in"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Operator Info -->
+                    <div class="form-section">
+                        <h3>Operator Information</h3>
+                        <div class="form-group">
+                            <label>Operator Name</label>
+                            <input type="text" name="operator_name" required=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Operator Signature</label>
+                            <input type="text" name="operator_signature" placeholder="Type name to sign"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Additional Operators</label>
+                            <input type="text" name="additional_operators"/>
+                        </div>
+                    </div>
+
+                    <!-- Supervisor Info -->
+                    <div class="form-section">
+                        <h3>Supervisor Information</h3>
+                        <div class="form-group">
+                            <label>Patrol Supervisor Name</label>
+                            <input type="text" name="supervisor_name" required=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Patrol Supervisor Signature</label>
+                            <input type="text" name="supervisor_signature" placeholder="Type name to sign"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Desk Sergeant Name</label>
+                            <input type="text" name="desk_sergeant_name" required=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Desk Sergeant Signature</label>
+                            <input type="text" name="desk_sergeant_signature" placeholder="Type name to sign"/>
+                        </div>
+                    </div>
+
+                    <!-- Inspection Items -->
+                    <div class="form-section">
+                        <h3>Inspection Items</h3>
+                        <p class="section-note">Mark BEFORE (), AFTER (), and add REMARKS as needed</p>
+                        
+                        <!-- Bulk Action Buttons -->
+                        <div class="bulk-actions">
+                            <button type="button" class="btn btn-sm btn-secondary" id="mark-all-before">Mark All Before</button>
+                            <button type="button" class="btn btn-sm btn-secondary" id="mark-all-after">Mark All After</button>
+                            <button type="button" class="btn btn-sm btn-secondary" id="mark-all-both">Mark All</button>
+                            <button type="button" class="btn btn-sm btn-outline" id="clear-all-checks">Clear All</button>
+                        </div>
+                        
+                        <div class="inspection-table">
+                            <div class="inspection-header">
+                                <span class="item-col">Item</span>
+                                <span class="check-col">Before</span>
+                                <span class="check-col">After</span>
+                                <span class="remark-col">Remarks</span>
+                            </div>
+                            
+                            <!-- Engine Off Items -->
+                            <div class="inspection-category">CHECK WITH ENGINE OFF</div>
+                            
+                            <div class="inspection-row">
+                                <span class="item-col">a. Engine Oil</span>
+                                <input type="checkbox" class="check-col" name="engine_oil_before"/>
+                                <input type="checkbox" class="check-col" name="engine_oil_after"/>
+                                <input type="text" class="remark-col" name="engine_oil_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">b. Power steering, Brake, Washer Fluid</span>
+                                <input type="checkbox" class="check-col" name="fluids_before"/>
+                                <input type="checkbox" class="check-col" name="fluids_after"/>
+                                <input type="text" class="remark-col" name="fluids_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">c. Radiator Fluid</span>
+                                <input type="checkbox" class="check-col" name="radiator_before"/>
+                                <input type="checkbox" class="check-col" name="radiator_after"/>
+                                <input type="text" class="remark-col" name="radiator_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">d. Belt Serviceability</span>
+                                <input type="checkbox" class="check-col" name="belt_before"/>
+                                <input type="checkbox" class="check-col" name="belt_after"/>
+                                <input type="text" class="remark-col" name="belt_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">e. Tire including spare</span>
+                                <input type="checkbox" class="check-col" name="tire_before"/>
+                                <input type="checkbox" class="check-col" name="tire_after"/>
+                                <input type="text" class="remark-col" name="tire_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">f. Jack, handle and lug wrench</span>
+                                <input type="checkbox" class="check-col" name="jack_before"/>
+                                <input type="checkbox" class="check-col" name="jack_after"/>
+                                <input type="text" class="remark-col" name="jack_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">g. Mirrors and windows</span>
+                                <input type="checkbox" class="check-col" name="mirrors_before"/>
+                                <input type="checkbox" class="check-col" name="mirrors_after"/>
+                                <input type="text" class="remark-col" name="mirrors_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">h. Vehicle cleanliness</span>
+                                <input type="checkbox" class="check-col" name="cleanliness_before"/>
+                                <input type="checkbox" class="check-col" name="cleanliness_after"/>
+                                <input type="text" class="remark-col" name="cleanliness_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">i. Body Damage / Decal Damage</span>
+                                <input type="checkbox" class="check-col" name="body_before"/>
+                                <input type="checkbox" class="check-col" name="body_after"/>
+                                <input type="text" class="remark-col" name="body_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">j. Dispatch package</span>
+                                <input type="checkbox" class="check-col" name="dispatch_before"/>
+                                <input type="checkbox" class="check-col" name="dispatch_after"/>
+                                <input type="text" class="remark-col" name="dispatch_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">k. Window tint film</span>
+                                <input type="checkbox" class="check-col" name="tint_before"/>
+                                <input type="checkbox" class="check-col" name="tint_after"/>
+                                <input type="text" class="remark-col" name="tint_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">l. Fire extinguisher and First Aid Kit</span>
+                                <input type="checkbox" class="check-col" name="extinguisher_before"/>
+                                <input type="checkbox" class="check-col" name="extinguisher_after"/>
+                                <input type="text" class="remark-col" name="extinguisher_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">m. Government plates / Rear Camera</span>
+                                <input type="checkbox" class="check-col" name="plates_before"/>
+                                <input type="checkbox" class="check-col" name="plates_after"/>
+                                <input type="text" class="remark-col" name="plates_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">n. Steering wheel cover</span>
+                                <input type="checkbox" class="check-col" name="wheel_cover_before"/>
+                                <input type="checkbox" class="check-col" name="wheel_cover_after"/>
+                                <input type="text" class="remark-col" name="wheel_cover_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">o. Roof rack</span>
+                                <input type="checkbox" class="check-col" name="roof_rack_before"/>
+                                <input type="checkbox" class="check-col" name="roof_rack_after"/>
+                                <input type="text" class="remark-col" name="roof_rack_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">p. Vehicle GSA Fuel card</span>
+                                <input type="checkbox" class="check-col" name="fuel_card_before"/>
+                                <input type="checkbox" class="check-col" name="fuel_card_after"/>
+                                <input type="text" class="remark-col" name="fuel_card_remark"/>
+                            </div>
+
+                            <!-- Operational System Check -->
+                            <div class="inspection-category">OPERATIONAL SYSTEM CHECK</div>
+                            
+                            <div class="inspection-row">
+                                <span class="item-col">a. Starting system</span>
+                                <input type="checkbox" class="check-col" name="starting_before"/>
+                                <input type="checkbox" class="check-col" name="starting_after"/>
+                                <input type="text" class="remark-col" name="starting_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">b. Transmission fluid</span>
+                                <input type="checkbox" class="check-col" name="transmission_before"/>
+                                <input type="checkbox" class="check-col" name="transmission_after"/>
+                                <input type="text" class="remark-col" name="transmission_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">c. Lights, signals, horn, wipers</span>
+                                <input type="checkbox" class="check-col" name="lights_before"/>
+                                <input type="checkbox" class="check-col" name="lights_after"/>
+                                <input type="text" class="remark-col" name="lights_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">d. Emergency equipment / Cones / Radio</span>
+                                <input type="checkbox" class="check-col" name="emergency_before"/>
+                                <input type="checkbox" class="check-col" name="emergency_after"/>
+                                <input type="text" class="remark-col" name="emergency_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">e. Brakes / pedal play</span>
+                                <input type="checkbox" class="check-col" name="brakes_before"/>
+                                <input type="checkbox" class="check-col" name="brakes_after"/>
+                                <input type="text" class="remark-col" name="brakes_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">f. Air condition</span>
+                                <input type="checkbox" class="check-col" name="ac_before"/>
+                                <input type="checkbox" class="check-col" name="ac_after"/>
+                                <input type="text" class="remark-col" name="ac_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">g. Eye witness equipment</span>
+                                <input type="checkbox" class="check-col" name="eyewitness_before"/>
+                                <input type="checkbox" class="check-col" name="eyewitness_after"/>
+                                <input type="text" class="remark-col" name="eyewitness_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">h. Radar equipment</span>
+                                <input type="checkbox" class="check-col" name="radar_before"/>
+                                <input type="checkbox" class="check-col" name="radar_after"/>
+                                <input type="text" class="remark-col" name="radar_remark"/>
+                            </div>
+                            <div class="inspection-row">
+                                <span class="item-col">i. Overhead light / Siren</span>
+                                <input type="checkbox" class="check-col" name="siren_before"/>
+                                <input type="checkbox" class="check-col" name="siren_after"/>
+                                <input type="text" class="remark-col" name="siren_remark"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Equipment -->
+                    <div class="form-section">
+                        <h3>Additional Equipment</h3>
+                        <div class="form-group">
+                            <label>1. Eyewitness microphone</label>
+                            <input type="text" name="eyewitness_mic"/>
+                        </div>
+                        <div class="form-group">
+                            <label>2. Radar tuning fork / Remote control</label>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>a. 25 MPH Serial #</label>
+                                    <input type="text" name="radar_25_serial"/>
+                                </div>
+                                <div class="form-group">
+                                    <label>b. 40 MPH Serial #</label>
+                                    <input type="text" name="radar_40_serial"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>3. Weapon rack key #</label>
+                            <input type="text" name="weapon_rack_key"/>
+                        </div>
+                        <div class="form-group">
+                            <label>4. Equipment Manuals</label>
+                            <input type="text" name="equipment_manuals"/>
+                        </div>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="form-section">
+                        <h3>Remarks</h3>
+                        <div class="form-group">
+                            <textarea name="remarks" rows="4" placeholder="Enter any additional remarks or deficiencies..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions four-buttons">
+                        <button type="button" class="btn btn-secondary" id="pmcs-preview">Preview</button>
+                        <button type="button" class="btn btn-secondary" id="pmcs-share">Share</button>
+                        <button type="button" class="btn btn-secondary" id="pmcs-save">Save</button>
+                        <button type="button" class="btn btn-primary" id="pmcs-download">Download PDF</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Calendar View -->
+        <section class="tab-view" id="calendar-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Calendar &amp; Shift Tracker</h2>
+            </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+            <div class="view-content">
+                <!-- Monthly Calendar -->
+                <div class="form-section calendar-section">
+                    <div class="calendar-header">
+                        <button type="button" class="calendar-nav" id="prev-month">&#10094;</button>
+                        <h3 id="calendar-month-year">February 2026</h3>
+                        <button type="button" class="calendar-nav" id="next-month">&#10095;</button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="calendar-day-header">Sun</div>
+                        <div class="calendar-day-header">Mon</div>
+                        <div class="calendar-day-header">Tue</div>
+                        <div class="calendar-day-header">Wed</div>
+                        <div class="calendar-day-header">Thu</div>
+                        <div class="calendar-day-header">Fri</div>
+                        <div class="calendar-day-header">Sat</div>
+                    </div>
+                    <div class="calendar-days" id="calendar-days">
+                        <!-- Days populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Shift Entry Form -->
+                <div class="form-section">
+                    <h3>Add Shift Entry <span id="selected-date-display"></span></h3>
+                    <form id="shift-form">
+                        <input type="hidden" name="shift_date" id="shift_date_input"/>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Beginning Time (HHMM)</label>
+                                <input type="text" name="begin_time" placeholder="0800" maxlength="4" inputmode="numeric" required=""/>
+                            </div>
+                            <div class="form-group">
+                                <label>Ending Time (HHMM)</label>
+                                <input type="text" name="end_time" placeholder="1600" maxlength="4" inputmode="numeric" required=""/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Total Hours</label>
+                            <input type="text" name="total_hours" id="total_hours" readonly=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Shift Type / Status</label>
+                            <select name="shift_status" id="shift_status" required="">
+                                <option value="duty">Duty</option>
+                                <option value="overtime">Overtime</option>
+                                <option value="leave">Leave</option>
+                                <option value="sick">Sick</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="overtime_reason_group" style="display: none;">
+                            <label>Overtime Reason</label>
+                            <input type="text" name="overtime_reason" placeholder="Reason for overtime..."/>
+                        </div>
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <textarea name="shift_notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Shift</button>
+                    </form>
+                </div>
+
+                <!-- Shift History -->
+                <div class="form-section">
+                    <h3>Shift History</h3>
+                    <div class="shift-list" id="shift-list">
+                        <p class="empty-state">No shifts recorded yet.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings View -->
+        <section class="tab-view" id="settings-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Settings</h2>
+            </header>
+
+            <!-- Menu Dropdown -->
+            <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-dropdown-item" id="menu-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <div class="notifications-actions">
+                        <button class="notifications-btn" id="mark-all-read">Mark all read</button>
+                        <button class="notifications-btn" id="clear-all-notifications">Clear all</button>
+                    </div>
+                </div>
+                <div class="notifications-create">
+                    <input type="text" id="notif-title" placeholder="Title" class="notif-input" />
+                    <textarea id="notif-message" placeholder="Message..." class="notif-textarea"></textarea>
+                    <button class="notifications-btn create-btn" id="create-notification">Create Notification</button>
+                </div>
+                <div class="notifications-list" id="notifications-list">
+                    <!-- Notifications will be rendered here -->
+                </div>
+                <div class="notifications-footer">
+                    <button class="notifications-btn test-btn" id="add-test-notification">+ Add Test Notification</button>
+                </div>
+            </div>
+            <div class="view-content">
+                <div class="form-section">
+                    <h3>App Settings</h3>
+                    <div class="form-group">
+                        <label>Theme</label>
+                        <select id="theme-select">
+                            <option value="light">Light (Default)</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Default Shift</label>
+                        <select id="default-shift">
+                            <option value="days">Days (0700-1500)</option>
+                            <option value="swings">Swings (1500-2300)</option>
+                            <option value="mid">Mid (2300-0700)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Auto-save Forms</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="autosave-toggle" checked=""/>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Data Management</h3>
+                    <button class="btn btn-secondary" id="export-data">Export All Data</button>
+                    <button class="btn btn-secondary" id="clear-data">Clear All Data</button>
+                </div>
+
+                <div class="form-section">
+                    <h3>PDF Diagnostics</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                        Inspect PDF form fields to verify mappings. Results will appear in browser console (F12).
+                    </p>
+                    <button class="btn btn-secondary" id="inspect-pdf-btn" onclick="app.runPDFInspection()">
+                         Inspect All PDF Fields
+                    </button>
+                </div>
+
+                <!-- Copyright Section -->
+                <div class="form-section copyright-section">
+                    <div class="copyright-box">
+                        <div class="copyright-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                <path d="M12 8v4M12 16h.01"></path>
+                            </svg>
+                        </div>
+                        <div class="copyright-content">
+                            <h4>PROTECTED INTELLECTUAL PROPERTY</h4>
+                            <p><strong>WARNING:</strong> Unauthorized use, reproduction, distribution, or modification of this software is strictly prohibited.</p>
+                            <p>All rights reserved. This application and its contents are the exclusive property of the developer.</p>
+                            <p class="copyright-legal">Violations may result in legal action under applicable copyright and intellectual property laws.</p>
+                            <p class="copyright-year"> 2026 Police Tools. All Rights Reserved.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>About</h3>
+                    <p class="about-text">Police Tools v1.0</p>
+                    <p class="about-text">Law Enforcement Productivity Suite</p>
+                    <p class="about-text">Built for officers, by officers.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="tab-view" id="panama-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Panama Schedule</h2>
+            </header>
+
+            <div class="view-content">
+                <!-- Configuration Section -->
+                <div class="form-section" id="panama-config">
+                    <h3>Schedule Configuration</h3>
+                    <div class="form-group">
+                        <label>Start Date (When did/will your cycle begin?)</label>
+                        <input type="date" id="panama-start-date" />
+                    </div>
+                    <div class="form-group">
+                        <label>That day was:</label>
+                        <select id="panama-start-status">
+                            <option value="off">OFF (Rest Day)</option>
+                            <option value="on">ON (Working)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Current Shift Type</label>
+                        <select id="panama-initial-shift">
+                            <option value="day">Day Shift (06:00-18:00)</option>
+                            <option value="night">Night Shift (18:00-06:00)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <span>Auto-rotate shifts every 2 months</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="panama-auto-rotate" checked />
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+                        <p class="help-text">Automatically switches Day -> Night -> Day every 2 months</p>
+                    </div>
+                    <button class="btn btn-primary" id="save-panama-config">Save Configuration</button>
+                    <button class="btn btn-secondary" id="edit-panama-pattern" style="margin-top: 12px; width: 100%;">Edit Pattern</button>
+                </div>
+                
+                <!-- Edit Pattern Section (hidden by default) -->
+                <div class="form-section" id="panama-edit-pattern" style="display: none;">
+                    <h3>Edit Pattern (14 Days)</h3>
+                    <p class="help-text">Click each day to toggle ON/OFF</p>
+                    <div class="pattern-edit-grid" id="pattern-edit-grid">
+                        <!-- Generated by JS -->
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="save-pattern">Save Pattern</button>
+                        <button class="btn btn-secondary" id="cancel-pattern">Cancel</button>
+                        <button class="btn btn-danger" id="reset-pattern">Reset to Default</button>
+                    </div>
+                </div>
+
+                <!-- Today's Status -->
+                <div class="form-section" id="panama-today">
+                    <h3>Today's Status</h3>
+                    <div class="panama-status-card" id="panama-status-card">
+                        <div class="status-icon" id="today-status-icon">O</div>
+                        <div class="status-info">
+                            <div class="status-title" id="today-status-title">OFF</div>
+                            <div class="status-shift" id="today-status-shift">Rest Day</div>
+                        </div>
+                    </div>
+                    <div class="next-shift-info" id="next-shift-info">
+                        <span>Next shift: Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Calendar Section -->
+                <div class="form-section panama-calendar-section">
+                    <div class="calendar-header">
+                        <button class="calendar-nav" id="panama-prev-month">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M15 18l-6-6 6-6"></path>
+                            </svg>
+                        </button>
+                        <h3 id="panama-month-year">March 2026</h3>
+                        <button class="calendar-nav" id="panama-next-month">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18l6-6-6-6"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot day"></span>
+                            <span>Day Shift</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot night"></span>
+                            <span>Night Shift</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot off"></span>
+                            <span>OFF</span>
+                        </div>
+                    </div>
+
+                    <div class="panama-calendar" id="panama-calendar">
+                        <div class="calendar-weekdays">
+                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span>
+                            <span>Th</span><span>Fr</span><span>Sa</span>
+                        </div>
+                        <div class="calendar-days" id="panama-calendar-days">
+                            <!-- Days will be generated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pattern Info -->
+                <div class="form-section">
+                    <h3>Panama Pattern (2-Week Cycle)</h3>
+                    <div class="pattern-visual">
+                        <div class="pattern-row">
+                            <span class="pattern-day off">OFF</span>
+                            <span class="pattern-day on">ON</span>
+                            <span class="pattern-day on">ON</span>
+                            <span class="pattern-day off">OFF</span>
+                            <span class="pattern-day off">OFF</span>
+                            <span class="pattern-day on">ON</span>
+                            <span class="pattern-day on">ON</span>
+                            <span class="pattern-day on">ON</span>
+                            <span class="pattern-day off">OFF</span>
+                            <span class="pattern-day off">OFF</span>
+                            <span class="pattern-day on">ON</span>
+                            <span class="pattern-day on">ON</span>
+                            <span class="pattern-day off">OFF</span>
+                            <span class="pattern-day off">OFF</span>
+                        </div>
+                        <div class="pattern-labels">
+                            <span>Week 1</span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span>Week 2</span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <p class="help-text">14-day cycle (2 weeks) repeats. Configure your start date and whether that day was ON or OFF. Shift type rotates every 2 months.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Personal Journal View -->
+        <section class="tab-view" id="journal-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Personal Journal</h2>
+            </header>
+
+            <div class="view-content">
+                <!-- New Entry Form -->
+                <div class="form-section">
+                    <h3>New Entry</h3>
+                    <div class="form-group">
+                        <textarea id="journal-entry-text" class="journal-textarea" placeholder="Write your thoughts..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" id="save-journal-entry">Save Entry</button>
+                </div>
+
+                <!-- Filter Section -->
+                <div class="form-section">
+                    <h3>Filter Entries</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>From</label>
+                            <input type="date" id="journal-filter-from" />
+                        </div>
+                        <div class="form-group">
+                            <label>To</label>
+                            <input type="date" id="journal-filter-to" />
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" id="apply-journal-filter">Apply Filter</button>
+                        <button class="btn btn-secondary" id="clear-journal-filter">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Generate Document -->
+                <div class="form-section">
+                    <h3>Generate Document</h3>
+                    <p class="help-text">Create a document with filtered entries</p>
+                    <button class="btn btn-primary" id="generate-journal-doc">Generate Document</button>
+                </div>
+
+                <!-- Entries List -->
+                <div class="form-section">
+                    <h3>Journal Entries <span id="journal-count" class="entry-count">(0)</span></h3>
+                    <div class="journal-entries-list" id="journal-entries-list">
+                        <!-- Entries will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PDF Preview Modal -->
+        <div class="modal" id="pdf-preview-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>PDF Preview</h3>
+                    <button class="close-btn" id="close-preview">X</button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="pdf-preview-frame" src="" frameborder="0"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="modal-share">Share</button>
+                    <button class="btn btn-primary" id="modal-download">Download</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>Generating PDF...</p>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/pdf-mappings.js"></script>
+    <script src="js/law-library-data.js"></script>
+    <script src="js/pdf-generator.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/mobile.js"></script>
+
+    <!-- PWA Install Prompt & Dark Theme -->
+    <script>
+        // Force Dark Theme as Default
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (!savedTheme) {
+                localStorage.setItem('theme', 'dark');
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+        })();
+
+        // PWA Install Functionality
+        let deferredPrompt;
+        let installButton;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('[PWA] beforeinstallprompt fired');
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Store the event for later use
+            deferredPrompt = e;
+            // Show the install button
+            showInstallButton();
+        });
+
+        function showInstallButton() {
+            // Check if button already exists
+            if (document.getElementById('pwa-install-btn')) return;
+
+            // Create install button
+            installButton = document.createElement('button');
+            installButton.id = 'pwa-install-btn';
+            installButton.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>INSTALL APP</span>
+            `;
+            installButton.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: white;
+                border: none;
+                border-radius: 50px;
+                padding: 14px 28px;
+                font-size: 16px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+                z-index: 9999;
+                cursor: pointer;
+                animation: slideUp 0.3s ease-out;
+            `;
+
+            // Add animation keyframes
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideUp {
+                    from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+                    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+
+            installButton.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                
+                // Show the install prompt
+                deferredPrompt.prompt();
+                
+                // Wait for the user to respond
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`[PWA] User response: ${outcome}`);
+                
+                if (outcome === 'accepted') {
+                    console.log('[PWA] User accepted install');
+                    installButton.remove();
+                }
+                
+                // Clear the deferred prompt
+                deferredPrompt = null;
+            });
+
+            document.body.appendChild(installButton);
+        }
+
+        // Hide install button if app is installed
+        window.addEventListener('appinstalled', () => {
+            console.log('[PWA] App was installed');
+            if (installButton) installButton.remove();
+            deferredPrompt = null;
+        });
+
+        // Check if app is already installed (display-mode: standalone)
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('[PWA] App is running in standalone mode');
+        }
+    </script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((registration) => {
+                        console.log('[PWA] Service Worker registered:', registration.scope);
+
+                        // Avisar cuando hay una version nueva lista para activarse
+                        registration.addEventListener('updatefound', () => {
+                            const worker = registration.installing;
+                            if (!worker) return;
+                            worker.addEventListener('statechange', () => {
+                                if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    window.dispatchEvent(new CustomEvent('sw-update-ready', {
+                                        detail: { worker }
+                                    }));
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.log('[PWA] Service Worker registration failed:', error);
+                    });
+            });
+
+            // Recargar una sola vez cuando el SW nuevo toma el control
+            let reloading = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (reloading) return;
+                reloading = true;
+                window.location.reload();
+            });
+        }
+    </script>
+
+</body></html>
