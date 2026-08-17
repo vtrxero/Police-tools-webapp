@@ -20,6 +20,13 @@
     const CLAVE_DESTINATARIOS = 'policeTools_mailTo';
     const CLAVE_COPIA_CC = 'policeTools_mailCc';
     const CLAVE_ULTIMA_COPIA = 'policeTools_lastBackup';
+    const CLAVE_AUTO_FECHA = 'policeTools_autoBackupAt';
+    const CLAVE_AUTO_FIRMA = 'policeTools_autoBackupSig';
+
+    // Las tres claves que escriben las propias copias. Se dejan fuera de
+    // la huella: si contaran, guardar la huella cambiaria el tamaño y la
+    // copia siguiente se dispararia sola en bucle.
+    const CLAVES_BITACORA = new Set([CLAVE_ULTIMA_COPIA, CLAVE_AUTO_FECHA, CLAVE_AUTO_FIRMA]);
 
     const app = () => window.app;
 
@@ -105,12 +112,19 @@
             };
         },
 
-        /** Tamaño aproximado de lo guardado, para enseñarlo en ajustes. */
-        tamano() {
+        /**
+         * Tamaño aproximado de lo guardado, para enseñarlo en ajustes.
+         *
+         * omitir sirve para la huella de la copia automatica: las claves que
+         * la propia copia escribe no pueden contar, o cada copia cambiaria el
+         * tamaño y la siguiente se creeria que hay algo nuevo.
+         */
+        tamano(omitir = null) {
             let bytes = 0;
             try {
                 for (let i = 0; i < localStorage.length; i++) {
                     const clave = localStorage.key(i);
+                    if (omitir && omitir.has(clave)) continue;
                     bytes += (clave || '').length + (localStorage.getItem(clave) || '').length;
                 }
             } catch (e) {}
@@ -203,6 +217,58 @@
             return { restauradas, pdfs, creado: copia.creado };
         },
 
+        /**
+         * Huella de lo que hay guardado. Si no cambia, no hay nada nuevo que
+         * copiar: recopilar() lee todos los PDFs de IndexedDB y los pasa a
+         * base64, que con diez documentos son ~25 MB. Hacerlo en cada arranque
+         * seria gastar bateria para reescribir lo mismo.
+         */
+        firma() {
+            const r = app()?.dailyReports || [];
+            const turnos = app()?.savedData?.shifts || [];
+            return `${r.length}:${r[0]?.id || ''}:${turnos.length}:${this.tamano(CLAVES_BITACORA)}`;
+        },
+
+        /**
+         * Copia automatica a Documents/PoliceTools.
+         *
+         * Es la unica que sobrevive a una desinstalacion. Los reportes y los
+         * PDFs viven en el almacenamiento interno de la app, y desinstalar lo
+         * borra entero; Documents es del telefono y no se toca. Si algun dia
+         * hay que reinstalar desde cero, el fichero sigue ahi para importarlo.
+         *
+         * Silenciosa a proposito: no avisa ni interrumpe. Solo en el APK,
+         * porque en el navegador no se puede escribir en disco sin pedirlo.
+         */
+        async automatica({ forzar = false } = {}) {
+            if (!window.PTOut?.esNativo?.()) return null;
+
+            const firma = this.firma();
+            if (!forzar && leer(CLAVE_AUTO_FIRMA) === firma) return null;
+
+            // Sin nada guardado no hay copia que hacer
+            if (!(app()?.dailyReports || []).length) return null;
+
+            try {
+                const copia = await this.recopilar({ incluirPDFs: true });
+                const blob = new Blob([JSON.stringify(copia)], { type: 'application/json' });
+
+                // Nombre fijo: se sobreescribe en vez de acumular un fichero
+                // de 25 MB por cada cambio hasta llenar el telefono.
+                const uri = await window.PTOut.guardarEnDocumentos(
+                    blob, 'PoliceTools_AutoBackup.json');
+                if (!uri) return null;
+
+                guardar(CLAVE_AUTO_FECHA, new Date().toISOString());
+                guardar(CLAVE_AUTO_FIRMA, firma);
+                this.actualizarEstado();
+                return { uri, bytes: blob.size };
+            } catch (e) {
+                console.warn('[data-io] copia automatica fallida:', e.message);
+                return null;
+            }
+        },
+
         async actualizarEstado() {
             const el = document.getElementById('backup-status');
             if (!el) return;
@@ -226,6 +292,19 @@
             const clase = dias > 14 ? ' class="warn"' : '';
 
             el.innerHTML = `<b${clase}>Last backup ${cuando}</b><span>${kb} stored · ${f.toLocaleDateString()}</span>`;
+
+            // La copia automatica es la red de seguridad: se dice donde esta
+            // para que se pueda encontrar sin la app instalada.
+            const auto = leer(CLAVE_AUTO_FECHA);
+            if (auto && window.PTOut?.esNativo?.()) {
+                const fa = new Date(auto);
+                const linea = document.createElement('span');
+                linea.className = 'auto-backup';
+                linea.textContent =
+                    `Auto-copy in Documents/PoliceTools · ${fa.toLocaleDateString()} ${
+                        fa.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                el.appendChild(linea);
+            }
         }
     };
 
@@ -494,8 +573,29 @@
     // ============================================
     // INICIO
     // ============================================
+    /*
+     * Copia automatica con retardo.
+     *
+     * Se espera un poco a proposito: guardar un documento ya hace trabajo
+     * pesado (generar el PDF, escribirlo en IndexedDB), y encadenar ahi la
+     * lectura de todos los PDFs para la copia dejaria la app trabada justo
+     * despues de tocar Guardar.
+     */
+    let pendiente = null;
+
+    function programarCopiaAutomatica(retardo = 8000) {
+        clearTimeout(pendiente);
+        pendiente = setTimeout(() => backup.automatica(), retardo);
+    }
+
     function init() {
         montarAjustes();
+
+        document.addEventListener('reportschanged', () => programarCopiaAutomatica());
+        document.addEventListener('shiftschanged', () => programarCopiaAutomatica());
+
+        // Y una al arrancar, por si la anterior quedo a medias
+        programarCopiaAutomatica(20000);
 
         // Recordar hacer copia si hace mas de dos semanas de la ultima
         const ultima = leer(CLAVE_ULTIMA_COPIA);
@@ -519,5 +619,5 @@
         init();
     }
 
-    window.PoliceToolsData = { backup, email, abrirHojaEnvio };
+    window.PoliceToolsData = { backup, email, abrirHojaEnvio, programarCopiaAutomatica };
 })();

@@ -86,6 +86,14 @@ jobs:
           done
           echo "Contenido verificado: $(find $A -type f | wc -l) archivos, $(du -sh $A | cut -f1)"
 
+      # Numero de version monotono: el recuento de commits solo crece, asi
+      # que cada APK publicado es mayor que el anterior y Android lo instala
+      # como actualizacion en vez de como reinstalacion.
+      - name: Numero de version
+        run: |
+          echo "PT_VERSION_CODE=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+          echo "PT_VERSION_NAME=2.1.$(git rev-list --count HEAD)" >> $GITHUB_ENV
+
       - name: Compilar debug
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
 
@@ -107,6 +115,19 @@ jobs:
             echo "El APK no esta firmado con android/app/debug.keystore"
             exit 1
           fi
+
+      # Si el versionCode no subiera, la actualizacion se degradaria a
+      # reinstalacion sin avisar. Mejor que falle aqui.
+      - name: Verificar el numero de version
+        run: |
+          AAPT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)/aapt
+          SALIDA=$("$AAPT" dump badging android/app/build/outputs/apk/debug/app-debug.apk | head -1)
+          echo "$SALIDA"
+          EN_APK=$(echo "$SALIDA" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+          if [ "$EN_APK" != "$PT_VERSION_CODE" ]; then
+            echo "El APK dice versionCode=$EN_APK y se esperaba $PT_VERSION_CODE"; exit 1
+          fi
+          echo "versionCode $EN_APK correcto"
 
       - name: Renombrar
         run: |

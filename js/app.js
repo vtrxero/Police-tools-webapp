@@ -1463,7 +1463,12 @@ class PoliceToolsApp {
             
             localStorage.setItem('policeToolsDailyReports', JSON.stringify(this.dailyReports));
             this.renderDailyReports();
-            
+
+            // Solo se lanzaba al borrar. La copia automatica, el aviso del
+            // PMCS y el resumen del mes escuchan este evento, asi que al
+            // guardar un documento no se enteraba ninguno.
+            document.dispatchEvent(new CustomEvent('reportschanged'));
+
             this.showToast('Report saved to Daily Reports!', 'success');
             return { success: true, report };
         } catch (e) {

@@ -24,21 +24,40 @@ APK que instala y arranca en blanco, que es peor que un fallo de compilación.
 
 ## Actualizar sin perder los reportes
 
-Las actualizaciones se instalan encima y **conservan los datos**, porque todas
-las compilaciones se firman con la misma clave (`android/app/debug.keystore`,
-versionada con el proyecto).
+Descarga el APK nuevo y ábrelo: se instala encima del anterior y **conserva los
+reportes**. No hay que desinstalar nada. Tres cosas lo sostienen:
 
-Hubo una excepción: los APKs anteriores a la versión 2.1.0 se firmaron con la
-clave que Gradle se generaba en cada runner, distinta cada vez. Si tienes uno
-de esos instalado, Android rechazará la actualización con *"App not installed"*
-y hay que desinstalar primero:
+**Una sola clave de firma.** Todas las compilaciones firman con
+`android/app/debug.keystore`, versionada con el proyecto. Android trata dos
+APKs con firmas distintas como aplicaciones ajenas y se niega a instalar uno
+sobre el otro (*"App not installed"*). Antes Gradle generaba una clave nueva en
+cada runner de CI, así que cada APK salía firmado distinto. El workflow ahora
+compara el SHA-256 del APK con el del keystore y falla si no coinciden, en vez
+de dejar que se descubra en el teléfono.
 
-1. *Ajustes → Backup* en la app, y exporta el JSON
-2. Desinstala Police Tools
-3. Instala el APK nuevo
-4. *Ajustes → Backup → Import* y elige el JSON
+**Un `versionCode` que solo sube.** Sale del recuento de commits
+(`git rev-list --count HEAD`), así que cada publicación es mayor que la
+anterior y el instalador la reconoce como actualización y no como
+reinstalación. Un paso con `aapt` comprueba que el número que acabó dentro del
+APK es el esperado.
 
-Solo hace falta una vez. A partir de ahí las actualizaciones entran directas.
+**Una copia automática fuera de la app.** La app escribe sola
+`Documents/PoliceTools/PoliceTools_AutoBackup.json` con todos los reportes y
+sus PDFs. `Documents` es del teléfono, no de la app: desinstalar borra el
+almacenamiento interno pero no toca esa carpeta. Si algún día hay que
+reinstalar desde cero, *Ajustes → Backup → Import* y ese fichero lo devuelve
+todo.
+
+La copia se rehace unos segundos después de guardar un documento o un turno, y
+solo si algo cambió de verdad: lleva una huella de lo guardado y, si coincide
+con la de la última copia, no reescribe (el fichero pesa decenas de MB con los
+PDFs dentro). Es silenciosa, no interrumpe. En el navegador no se ejecuta,
+porque una web no puede escribir en disco sin que se lo pidan.
+
+Si tienes instalado un APK anterior a la versión 2.1.0 —los que se firmaban con
+la clave aleatoria— esa sí necesita desinstalarse una vez: exporta el JSON
+desde *Ajustes → Backup*, desinstala, instala el APK nuevo e importa el JSON.
+De ahí en adelante las actualizaciones entran directas.
 
 ## Compilar en tu máquina
 

@@ -260,5 +260,29 @@
         }
     }
 
-    window.PTOut = { esNativo, puedeAdjuntar, descargar, compartir, limpiarNombre };
+    /**
+     * Escribe sin abrir ningun dialogo, para la copia automatica.
+     *
+     * Va a Documents porque esa carpeta es del telefono, no de la app:
+     * desinstalar Police Tools borra su almacenamiento interno —los reportes
+     * y los PDFs— pero no toca lo que haya en Documents. Es lo unico que
+     * sobrevive a una reinstalacion desde cero.
+     *
+     * Solo en nativo: en el navegador no se puede escribir en disco sin que
+     * el usuario lo pida, y lanzar una descarga a solas seria peor.
+     * Devuelve null cuando no se puede.
+     */
+    async function guardarEnDocumentos(blob, nombre) {
+        if (!esNativo() || !plugin('Filesystem')) return null;
+        try {
+            return await escribir(blob, nombre, 'DOCUMENTS');
+        } catch (e) {
+            console.warn('[file-out] copia automatica no escrita:', e.message);
+            return null;
+        }
+    }
+
+    window.PTOut = {
+        esNativo, puedeAdjuntar, descargar, compartir, limpiarNombre, guardarEnDocumentos, CARPETA
+    };
 })();
