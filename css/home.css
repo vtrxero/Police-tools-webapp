@@ -112,15 +112,16 @@
    con el texto ni forme un borde duro */
 .hs-hero-photo {
     position: absolute;
-    inset: 0 0 auto auto;
-    width: 62%;
-    height: 100%;
+    inset: 0 0 0 auto;
+    width: 72%;
     background-image: var(--hero-image, none);
     background-size: cover;
-    background-position: center right;
+    /* El coche esta en la mitad derecha-baja de la foto: encuadrando por
+       ahi se ve el vehiculo y no solo los edificios del fondo. */
+    background-position: 72% 62%;
     opacity: var(--hero-opacity, 0.85);
-    -webkit-mask-image: linear-gradient(100deg, transparent 0%, rgba(0,0,0,0.5) 32%, #000 78%);
-    mask-image: linear-gradient(100deg, transparent 0%, rgba(0,0,0,0.5) 32%, #000 78%);
+    -webkit-mask-image: linear-gradient(100deg, transparent 0%, rgba(0,0,0,0.45) 30%, #000 72%);
+    mask-image: linear-gradient(100deg, transparent 0%, rgba(0,0,0,0.45) 30%, #000 72%);
     pointer-events: none;
 }
 
@@ -153,12 +154,28 @@
     position: relative;
     padding: var(--s3) var(--s4) var(--s4);
     border-top: var(--hairline);
-    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    /* Opaco solo bajo el texto y transparente hacia la derecha, para que
+       el vehiculo siga viendose en la mitad inferior de la tarjeta. */
+    background: linear-gradient(
+        95deg,
+        var(--bg-card) 0%,
+        var(--bg-card) 46%,
+        color-mix(in srgb, var(--bg-card) 72%, transparent) 68%,
+        color-mix(in srgb, var(--bg-card) 18%, transparent) 100%
+    );
     display: flex;
     flex-direction: column;
     gap: var(--s2);
+}
+
+/* La cabecera necesita el mismo trato: el titulo va sobre la foto */
+.hs-hero-head {
+    background: linear-gradient(
+        95deg,
+        var(--bg-card) 0%,
+        color-mix(in srgb, var(--bg-card) 82%, transparent) 42%,
+        transparent 72%
+    );
 }
 
 .hs-hero-foot .hs-label {
