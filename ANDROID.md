@@ -4,19 +4,41 @@ La app es la misma en web y en Android: Capacitor empaqueta los archivos de
 `www/` dentro del APK, así que funciona sin conexión y sin necesidad de
 alojar nada.
 
-## Cómo conseguir el APK
+## Instalar en el teléfono
 
-**El más fácil: GitHub Actions.** Cada push a cualquier rama compila el APK
-automáticamente.
+Abre este enlace **desde el propio teléfono**:
 
-1. Abre la pestaña **Actions** del repositorio
-2. Entra en la ejecución más reciente de *Android APK*
-3. Descarga el artefacto **PoliceTools-debug-apk**
-4. Pásalo al teléfono e instálalo (hay que permitir "orígenes desconocidos")
+**https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-latest/PoliceTools.apk**
+
+Es siempre el mismo enlace y siempre apunta a la última compilación: cada push
+lo reemplaza. Android pedirá permiso para instalar desde esta fuente, que es lo
+normal en una app que no viene de Play Store.
+
+El artefacto de la pestaña *Actions* sigue estando, pero para instalar no
+sirve: viene comprimido en un zip y su descarga exige estar identificado en
+GitHub. Úsalo solo para recuperar una compilación antigua.
 
 El workflow verifica antes de compilar que las plantillas PDF y los scripts
 estén dentro del paquete. Sin esa comprobación, un fallo al copiar produce un
 APK que instala y arranca en blanco, que es peor que un fallo de compilación.
+
+## Actualizar sin perder los reportes
+
+Las actualizaciones se instalan encima y **conservan los datos**, porque todas
+las compilaciones se firman con la misma clave (`android/app/debug.keystore`,
+versionada con el proyecto).
+
+Hubo una excepción: los APKs anteriores a la versión 2.1.0 se firmaron con la
+clave que Gradle se generaba en cada runner, distinta cada vez. Si tienes uno
+de esos instalado, Android rechazará la actualización con *"App not installed"*
+y hay que desinstalar primero:
+
+1. *Ajustes → Backup* en la app, y exporta el JSON
+2. Desinstala Police Tools
+3. Instala el APK nuevo
+4. *Ajustes → Backup → Import* y elige el JSON
+
+Solo hace falta una vez. A partir de ahí las actualizaciones entran directas.
 
 ## Compilar en tu máquina
 
@@ -31,10 +53,10 @@ npm run android:debug
 
 ## APK firmado para repartir
 
-El APK de debug sirve para probar, pero cada compilación lleva una firma
-distinta, así que Android no deja actualizar encima: hay que desinstalar y
-volver a instalar, perdiendo los datos. Para repartirlo de verdad hace falta
-una clave propia.
+La clave de debug está en el repositorio, así que su contraseña es pública y no
+acredita quién construyó el APK. Sirve para que las actualizaciones se
+instalen encima, no para demostrar procedencia. Para repartir la app fuera del
+equipo hace falta una clave propia que no salga de tus manos.
 
 ```bash
 keytool -genkey -v -keystore police-tools.keystore \

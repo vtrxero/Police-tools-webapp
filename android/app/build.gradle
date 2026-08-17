@@ -7,8 +7,8 @@ android {
         applicationId "mil.buchanan.policetools"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "2.0.0"
+        versionCode 3
+        versionName "2.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,7 +16,34 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Clave de firma fija, versionada con el proyecto.
+    //
+    // Sin esto Gradle genera un debug.keystore en la maquina que compila, y
+    // cada ejecucion del workflow arranca con un runner limpio: cada APK
+    // salia firmado con una clave distinta. Android trata dos APKs con firmas
+    // distintas como aplicaciones ajenas y se niega a instalar uno sobre el
+    // otro ("App not installed"), asi que actualizar obligaba a desinstalar
+    // primero — y desinstalar borra los reportes.
+    //
+    // Con la clave en el repositorio todas las compilaciones firman igual y
+    // las actualizaciones entran encima conservando los datos.
+    //
+    // La contrapartida: la clave es publica, asi que no acredita quien
+    // construyo el APK. Para eso esta la firma de release, cuya clave vive en
+    // los secrets del repositorio (KEYSTORE_BASE64) y no aqui.
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

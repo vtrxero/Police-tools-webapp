@@ -3,8 +3,16 @@
 #
 # El SDK de Android no se puede descargar desde el entorno de desarrollo
 # (dl.google.com esta bloqueado por politica de red), pero los runners de
-# GitHub ya lo traen instalado. Asi que el APK se compila aqui y queda
-# descargable desde la pestaña Actions de cada ejecucion.
+# GitHub ya lo traen instalado, asi que el APK se compila aqui.
+#
+# Y se publica en una release con la etiqueta fija 'apk-latest', que da un
+# enlace directo y siempre el mismo:
+#
+#   https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-latest/PoliceTools.apk
+#
+# El artefacto de Actions no sirve para instalar desde el telefono: viene
+# comprimido en un zip y su descarga exige estar identificado en GitHub. Se
+# mantiene de todas formas, que para revisar una compilacion vieja va bien.
 # ============================================
 name: Android APK
 
@@ -24,6 +32,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+
+    # Publicar la release necesita permiso de escritura sobre el repositorio
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +89,25 @@ jobs:
       - name: Compilar debug
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
 
+      # La firma tiene que ser siempre la misma clave versionada. Si Gradle
+      # vuelve a generarse una propia, el APK deja de instalarse encima del
+      # anterior y hay que desinstalar, perdiendo los reportes. Mejor que
+      # falle la compilacion que enterarse en el telefono.
+      - name: Verificar la firma
+        run: |
+          ESPERADA=$(keytool -list -v -keystore android/app/debug.keystore \
+                       -storepass android 2>/dev/null \
+                     | grep 'SHA256:' | head -1 | tr -d '[:space:]')
+          OBTENIDA=$(keytool -printcert -jarfile \
+                       android/app/build/outputs/apk/debug/app-debug.apk 2>/dev/null \
+                     | grep 'SHA256:' | head -1 | tr -d '[:space:]')
+          echo "esperada: $ESPERADA"
+          echo "obtenida: $OBTENIDA"
+          if [ -z "$OBTENIDA" ] || [ "$ESPERADA" != "$OBTENIDA" ]; then
+            echo "El APK no esta firmado con android/app/debug.keystore"
+            exit 1
+          fi
+
       - name: Renombrar
         run: |
           mkdir -p out
@@ -90,6 +121,42 @@ jobs:
           name: PoliceTools-debug-apk
           path: out/*.apk
           retention-days: 60
+
+      # El APK que se instala en el telefono, con enlace fijo. La etiqueta se
+      # reutiliza a proposito: asi el enlace de descarga no cambia nunca y no
+      # hay que buscar cual es la ultima version.
+      - name: Publicar release descargable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/PoliceTools.apk
+          SHA=$(git rev-parse --short HEAD)
+          TAM=$(du -h out/PoliceTools.apk | cut -f1)
+
+          cat > notas.md <<NOTAS
+          APK de Police Tools — compilado de \`$SHA\` ($TAM).
+
+          **Instalar:** abre este enlace desde el telefono y toca
+          \`PoliceTools.apk\`. Android va a pedir permiso para instalar desde
+          esta fuente; es normal en una app que no viene de Play Store.
+          Se instala encima de la anterior y **conserva los reportes**.
+
+          Ultimo cambio: $(git log -1 --pretty=%s)
+          NOTAS
+
+          # --clobber reemplaza el fichero si la release ya existe
+          if gh release view apk-latest >/dev/null 2>&1; then
+            gh release edit apk-latest --notes-file notas.md --target "$GITHUB_SHA"
+            gh release upload apk-latest out/PoliceTools.apk --clobber
+          else
+            gh release create apk-latest out/PoliceTools.apk \
+              --title "Police Tools — ultimo APK" \
+              --notes-file notas.md \
+              --target "$GITHUB_SHA"
+          fi
+
+          echo "Descarga: https://github.com/$GITHUB_REPOSITORY/releases/download/apk-latest/PoliceTools.apk"
 
       # El APK de release necesita una clave de firma. Se guarda en
       # Settings -> Secrets como KEYSTORE_BASE64, y las contraseñas aparte.

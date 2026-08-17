@@ -10,8 +10,16 @@ android/build/
 android/app/build/
 android/.gradle/
 android/local.properties
-android/app/release.keystore
 *.apk
 *.aab
 *.keystore
 *.jks
+
+# La clave de release NO se versiona: vive en los secrets del repositorio
+android/app/release.keystore
+
+# La de debug si, y tiene que estarlo. Es la que firma los APKs que se
+# instalan en el telefono, y si cambia entre compilaciones Android rechaza la
+# actualizacion y hay que desinstalar, perdiendo los reportes. Su contraseña
+# es publica y conocida: no acredita nada, solo mantiene la firma estable.
+!android/app/debug.keystore

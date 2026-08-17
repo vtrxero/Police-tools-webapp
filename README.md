@@ -5,8 +5,9 @@ JavaScript vanilla que se sirven como archivos estáticos.
 
 ## Uso
 
-**Android:** descarga el APK desde la pestaña *Actions* del repositorio
-(artefacto `PoliceTools-debug-apk` de la última ejecución). Ver
+**Android:** abre desde el teléfono
+[**PoliceTools.apk**](https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-latest/PoliceTools.apk).
+Es siempre el mismo enlace y apunta a la última compilación. Ver
 [ANDROID.md](ANDROID.md).
 
 **Web:**
