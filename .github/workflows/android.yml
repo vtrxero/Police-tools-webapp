@@ -157,10 +157,20 @@ jobs:
             return 1
           }
 
-          # --clobber reemplaza el fichero si la release ya existe
+          # El APK primero, y las notas despues como algo opcional.
+          #
+          # Estaban al reves y costo dos publicaciones: la API devolvia 503 al
+          # editar las notas, eso abortaba el paso y el APK —ya compilado y
+          # verificado— no llegaba a subirse nunca. El binario es lo que se
+          # instala; el texto de la release es decoracion.
+          #
+          # Ademas van por endpoints distintos (uploads.github.com contra
+          # api.github.com), asi que uno puede estar caido y el otro no.
           if gh release view apk-latest >/dev/null 2>&1; then
-            reintentar gh release edit apk-latest --notes-file notas.md --target "$GITHUB_SHA"
             reintentar gh release upload apk-latest out/PoliceTools.apk --clobber
+
+            reintentar gh release edit apk-latest --notes-file notas.md --target "$GITHUB_SHA" \
+              || echo "Aviso: el APK se publico pero no se pudieron actualizar las notas"
           else
             reintentar gh release create apk-latest out/PoliceTools.apk \
               --title "Police Tools — ultimo APK" \
