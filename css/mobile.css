@@ -897,3 +897,293 @@ body.keyboard-open .bottom-nav {
     flex-wrap: wrap;
     align-items: center;
 }
+
+/* ============================================
+   19. FIRMA
+   ============================================ */
+.sig-field {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.sig-btn {
+    flex: 1;
+    min-height: 64px;
+    padding: 8px 12px;
+    border: 2px dashed rgba(128, 128, 128, 0.4);
+    border-radius: 12px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+.sig-btn svg {
+    width: 26px;
+    height: 26px;
+    opacity: 0.7;
+}
+
+.sig-btn.signed {
+    border-style: solid;
+    border-color: var(--accent-green);
+    background: var(--bg-card);
+    padding: 4px;
+}
+
+.sig-btn img {
+    max-height: 56px;
+    max-width: 100%;
+    object-fit: contain;
+    /* Los trazos se guardan en tinta oscura: en los temas oscuros hay que
+       invertirlos para que se vean sobre el fondo */
+    filter: none;
+}
+
+[data-theme="midnight"] .sig-btn img,
+[data-theme="carbon"] .sig-btn img,
+[data-theme="forest"] .sig-btn img,
+[data-theme="tactical"] .sig-btn img,
+[data-theme="nightops"] .sig-btn img,
+[data-theme="dark"] .sig-btn img {
+    filter: invert(1) brightness(1.6);
+}
+
+.sig-clear-btn {
+    flex: 0 0 44px;
+    border: none;
+    border-radius: 12px;
+    background: var(--bg-primary);
+    color: var(--accent-red);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sig-clear-btn[hidden] {
+    display: none;
+}
+
+/* --- Modal de firma --- */
+.sig-sheet {
+    gap: 12px;
+}
+
+.sig-pad {
+    position: relative;
+    height: 190px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    overflow: hidden;
+}
+
+.sig-pad canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    /* Sin esto el gesto de dibujar desplaza la pagina */
+    touch-action: none;
+    cursor: crosshair;
+}
+
+/* Linea de referencia, como en el papel */
+.sig-line {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 42px;
+    height: 1px;
+    background: #c9ced6;
+    pointer-events: none;
+}
+
+.sig-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.sig-actions .btn {
+    flex: 1;
+    margin: 0;
+}
+
+/* En horizontal cabe una firma mas natural */
+@media (orientation: landscape) and (max-height: 520px) {
+    .sig-pad { height: 34dvh; }
+    .sig-sheet .section-note { display: none; }
+}
+
+/* ============================================
+   20. CRONOMETRO DE MISION
+   ============================================ */
+.mission-timer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+    background: var(--bg-primary);
+    border: 1px solid rgba(128, 128, 128, 0.18);
+}
+
+.mission-timer.running {
+    background: var(--accent-bg, var(--bg-card));
+    border-color: var(--accent-green);
+}
+
+.mt-start {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 52px;
+    border: none;
+    border-radius: 12px;
+    background: var(--accent-green);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 650;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.mt-start:active {
+    transform: scale(0.97);
+}
+
+.mt-start svg {
+    width: 22px;
+    height: 22px;
+}
+
+.mt-hint {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.mt-live {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mt-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    flex-shrink: 0;
+    animation: mtPulse 2s ease-in-out infinite;
+}
+
+@keyframes mtPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+.mt-text b {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.mt-text span {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.mt-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.mt-stop,
+.mt-discard {
+    flex: 1;
+    min-height: var(--touch-target);
+    border: none;
+    border-radius: 11px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.mt-stop {
+    flex: 2;
+    background: var(--accent-blue);
+    color: #fff;
+}
+
+.mt-discard {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.mt-stop:active,
+.mt-discard:active {
+    transform: scale(0.96);
+}
+
+/* ============================================
+   21. DICTADO
+   ============================================ */
+.mic-wrap {
+    position: relative;
+    display: block;
+}
+
+.mic-wrap textarea,
+.mic-wrap input {
+    /* Deja sitio al boton para que no tape el texto */
+    padding-right: 54px;
+}
+
+.mic-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.mic-btn svg {
+    width: 19px;
+    height: 19px;
+}
+
+.mic-btn:active {
+    transform: scale(0.92);
+}
+
+.mic-btn.listening {
+    background: var(--accent-red);
+    color: #fff;
+    animation: micPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}

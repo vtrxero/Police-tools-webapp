@@ -300,6 +300,8 @@ class PDFGenerator {
             form.updateFieldAppearances();
         } catch (e) {}
         
+        await this.estamparFirmas(pdfDoc, mapping);
+
         this.debug('SUCCESS', { 
             template: 'interview', 
             filled: filledCount, 
@@ -364,6 +366,8 @@ class PDFGenerator {
             form.updateFieldAppearances();
         } catch (e) {}
         
+        await this.estamparFirmas(pdfDoc, mapping);
+
         this.debug('SUCCESS', { template: 'guardmount', filled: filledCount });
         return pdfDoc;
     }
@@ -518,6 +522,8 @@ class PDFGenerator {
             form.updateFieldAppearances();
         } catch (e) {}
         
+        await this.estamparFirmas(pdfDoc, mapping);
+
         this.debug('SUCCESS', { template: 'patrol', filled: filledCount });
         return pdfDoc;
     }
@@ -673,6 +679,8 @@ class PDFGenerator {
         // Marca informativa del tipo de documento (ya no se aplana)
         pdfDoc.__isPMCS = true;
         
+        await this.estamparFirmas(pdfDoc, mapping);
+
         this.debug('SUCCESS', { 
             template: mappingKey, 
             textFieldsFilled: filledCount,
@@ -1113,6 +1121,93 @@ class PDFGenerator {
             this.debug('WARN', { action: 'No se pudo escribir en el campo', error: e.message });
             return false;
         }
+    }
+
+    // ============================================
+    // FIRMAS
+    // ============================================
+    /**
+     * Estampa las firmas dibujadas a mano sobre sus lineas del formulario.
+     *
+     * Antes la firma era texto tecleado, asi que el documento salia completo
+     * pero sin firmar y habia que imprimirlo para firmarlo.
+     *
+     * Cuando el PDF tiene un campo para esa firma se usa su propio rectangulo
+     * y el campo se vacia, para que el trazo no quede encima del nombre. Si
+     * no lo tiene (las plantillas PMCS solo imprimen la linea), la posicion
+     * sale de mapping.signatureBoxes.
+     */
+    async estamparFirmas(pdfDoc, mapping) {
+        const firmas = window.PoliceToolsSignature?.almacen.todas() || {};
+        if (!Object.keys(firmas).length) return 0;
+
+        const form = pdfDoc.getForm();
+        const paginas = pdfDoc.getPages();
+        let puestas = 0;
+
+        for (const [clave, dataUrl] of Object.entries(firmas)) {
+            if (!dataUrl) continue;
+
+            // Donde va: campo del AcroForm o caja declarada en el mapeo
+            let destino = null;
+
+            const mapeo = mapping?.fields?.[clave];
+            if (mapeo && mapeo.pdfField) {
+                try {
+                    const campo = form.getTextField(mapeo.pdfField);
+                    const w = campo.acroField.getWidgets()[0];
+                    const r = w.getRectangle();
+                    const pagina = paginas.findIndex(p => p.ref === w.P());
+
+                    // El nombre tecleado estorbaria bajo el trazo
+                    campo.setText('');
+
+                    destino = { pagina: pagina < 0 ? 0 : pagina, ...r };
+                } catch (e) {
+                    destino = null;
+                }
+            }
+
+            if (!destino && mapping?.signatureBoxes?.[clave]) {
+                const c = mapping.signatureBoxes[clave];
+                destino = { pagina: c.page || 0, x: c.x, y: c.y, width: c.width, height: c.height };
+            }
+
+            if (!destino) continue;
+
+            try {
+                const png = await pdfDoc.embedPng(dataUrl);
+
+                // Los campos de firma son lineas muy bajas (unos 12 pt). Si la
+                // imagen se encajara dentro, la firma saldria diminuta.
+                // Una firma de verdad se apoya en la linea y sobresale por
+                // encima, asi que se permite hasta 1.8 veces el alto del campo
+                // y se ancla en la base.
+                const cajaW = destino.width - 6;
+                const cajaH = destino.height * 1.8;
+
+                const escala = Math.min(cajaW / png.width, cajaH / png.height);
+                const ancho = png.width * escala;
+                const alto = png.height * escala;
+
+                paginas[destino.pagina].drawImage(png, {
+                    x: destino.x + (destino.width - ancho) / 2,
+                    // Ligeramente por debajo del borde inferior, como al firmar
+                    // cruzando la linea
+                    y: destino.y - alto * 0.12,
+                    width: ancho,
+                    height: alto
+                });
+
+                puestas++;
+                this.debug('PDF_WRITE', { type: 'signature', campo: clave });
+            } catch (e) {
+                this.debug('WARN', { action: 'No se pudo estampar la firma', campo: clave, error: e.message });
+            }
+        }
+
+        if (puestas) this.debug('SUCCESS', { action: 'Firmas estampadas', total: puestas });
+        return puestas;
     }
 
     // ============================================

@@ -207,6 +207,22 @@ const patrolLogMapping = {
 // TODOS los campos son PDFTextField (no checkboxes)
 // ============================================
 const pmcsBaseMapping = {
+    // ============================================
+    // CAJAS DE FIRMA
+    //
+    // Las plantillas PMCS imprimen las lineas de "Operator Signature",
+    // "Patrol Supervisor Signature" y "Desk Sergeant Signature" pero no
+    // definen ningun campo para ellas, asi que no hay rectangulo del que
+    // partir. Estas coordenadas se miden sobre la propia pagina 1 (540x720
+    // pt, origen abajo-izquierda), alineadas con los campos de nombre que
+    // si existen y que estan en la misma fila.
+    // ============================================
+    signatureBoxes: {
+        'operator_signature':      { page: 0, x: 348, y: 112, width: 186, height: 22 },
+        'supervisor_signature':    { page: 0, x: 290, y: 76,  width: 244, height: 22 },
+        'desk_sergeant_signature': { page: 0, x: 290, y: 40,  width: 244, height: 22 }
+    },
+
     totalFields: 103,
     semanticFields: 103,
     
