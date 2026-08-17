@@ -370,16 +370,34 @@ class PoliceToolsApp {
             this.openTab('calendar');
         });
 
-        // Tema
-        document.getElementById('theme-select')?.addEventListener('change', (e) => {
-            document.documentElement.setAttribute('data-theme', e.target.value);
-            this.saveData('theme', e.target.value);
-        });
+        // Tema: lo gestiona themeManager, que ya se aplico antes de pintar.
+        // Aqui solo se monta el selector de los ajustes.
+        this.setupThemePicker();
+    }
 
-        const savedTheme = this.savedData.theme || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        const themeSelect = document.getElementById('theme-select');
-        if (themeSelect) themeSelect.value = savedTheme;
+    setupThemePicker() {
+        const tm = window.themeManager;
+        if (!tm) return;
+
+        const contenedor = document.getElementById('theme-picker');
+        tm.renderPicker(contenedor);
+
+        const auto = document.getElementById('theme-auto-toggle');
+        if (auto) {
+            auto.checked = tm.autoEnabled;
+            auto.addEventListener('change', (e) => {
+                tm.activarAuto(e.target.checked);
+                tm.refrescarSeleccion(contenedor);
+                this.showToast(
+                    e.target.checked ? 'Theme follows the clock now' : 'Theme fixed',
+                    'info'
+                );
+            });
+        }
+
+        // Cuando el modo automatico cambia el tema, la marca de seleccion
+        // del selector tiene que seguirlo
+        document.addEventListener('themechange', () => tm.refrescarSeleccion(contenedor));
     }
 
     setupDailyReportsFilter() {
@@ -1394,13 +1412,6 @@ class PoliceToolsApp {
             pdfGenerator.ensureFillable(pdfDoc);
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-            
-            // Convert to base64 for storage
-            const pdfData = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(blob);
-            });
 
             // Build title with name for Interview Worksheet
             let reportTitle = this.getReportTitle(type);
@@ -1435,9 +1446,13 @@ class PoliceToolsApp {
                     hour: '2-digit',
                     minute: '2-digit'
                 }),
-                pdfData: pdfData,
+                // El PDF va a IndexedDB, no aqui: en localStorage ocupaba
+                // ~1.2 MB por documento contra una cuota de ~4.8 MB.
+                pdfEnStore: true,
                 formData: payload
             };
+
+            await window.PoliceToolsStore.guardar(uniqueId, blob);
 
             this.dailyReports.unshift(report);
             
@@ -1580,13 +1595,20 @@ class PoliceToolsApp {
                 <span class="multi-share-count"><span id="selected-count">0</span> selected</span>
                 <div class="multi-share-actions">
                     <button type="button" class="btn-clear-selection" onclick="app.clearSelection()">Clear</button>
+                    <button type="button" class="btn-email-selected" id="btn-email-selected" onclick="app.emailSelectedReports()" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <path d="m22 7-10 6L2 7"/>
+                        </svg>
+                        Email
+                    </button>
                     <button type="button" class="btn-share-selected" id="btn-share-selected" onclick="app.shareSelectedReports()" disabled>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
                             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
                             <polyline points="16 6 12 2 8 6"/>
                             <line x1="12" y1="2" x2="12" y2="15"/>
                         </svg>
-                        Share Selected
+                        Share
                     </button>
                 </div>
             </div>
@@ -1707,9 +1729,29 @@ class PoliceToolsApp {
         const count = this.selectedReports.size;
         const countEl = document.getElementById('selected-count');
         const shareBtn = document.getElementById('btn-share-selected');
-        
+        const emailBtn = document.getElementById('btn-email-selected');
+
         if (countEl) countEl.textContent = count;
         if (shareBtn) shareBtn.disabled = count === 0;
+        if (emailBtn) emailBtn.disabled = count === 0;
+    }
+
+    /** Abre la hoja de envio por correo con los documentos marcados. */
+    emailSelectedReports() {
+        if (this.selectedReports.size === 0) {
+            this.showToast('No reports selected', 'warning');
+            return;
+        }
+        if (!window.PoliceToolsData) {
+            this.showToast('Email module not loaded', 'error');
+            return;
+        }
+
+        const reportes = Array.from(this.selectedReports)
+            .map(i => this.dailyReports[i])
+            .filter(Boolean);
+
+        window.PoliceToolsData.abrirHojaEnvio(reportes);
     }
 
     clearSelection() {
@@ -1739,16 +1781,10 @@ class PoliceToolsApp {
             const files = [];
             for (const report of selectedReports) {
                 try {
-                    const pdfData = report.pdfData.split(',')[1];
-                    const byteCharacters = atob(pdfData);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    const blob = await this.getReportBlob(report);
+                    if (blob) {
+                        files.push(new File([blob], report.filename, { type: 'application/pdf' }));
                     }
-                    const byteArray = new Uint8Array(byteNumbers);
-                    const blob = new Blob([byteArray], { type: 'application/pdf' });
-                    const file = new File([blob], report.filename, { type: 'application/pdf' });
-                    files.push(file);
                 } catch (e) {
                     console.error('Error converting PDF:', e);
                 }
@@ -1920,35 +1956,55 @@ class PoliceToolsApp {
         });
     }
 
-    viewDailyReport(index) {
+    /**
+     * Devuelve el Blob del PDF de un reporte.
+     * Los guardados con la version anterior aun traen pdfData en base64.
+     */
+    async getReportBlob(report) {
+        if (!report) return null;
+
+        if (report.pdfData) {
+            const base64 = String(report.pdfData).split(',')[1] || '';
+            const bin = atob(base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new Blob([bytes], { type: 'application/pdf' });
+        }
+
+        return await window.PoliceToolsStore.obtener(report.id);
+    }
+
+    async viewDailyReport(index) {
         const report = this.dailyReports[index];
-        if (!report || !report.pdfData) {
+        const blob = report ? await this.getReportBlob(report) : null;
+        if (!blob) {
             this.showToast('Report not available', 'error');
             return;
         }
 
-        // Open PDF in modal
+        // La URL anterior se libera para no acumular blobs en memoria
+        if (this.currentPDF?.previewUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(this.currentPDF.previewUrl);
+        }
+
+        const url = URL.createObjectURL(blob);
         const modal = document.getElementById('pdf-preview-modal');
         const frame = document.getElementById('pdf-preview-frame');
-        frame.src = report.pdfData;
+        frame.src = url;
         modal.classList.add('active');
-        
-        this.currentPDF = { 
-            previewUrl: report.pdfData,
-            filename: report.filename
-        };
+
+        this.currentPDF = { previewUrl: url, filename: report.filename };
     }
 
     async shareDailyReport(index) {
         const report = this.dailyReports[index];
-        if (!report || !report.pdfData) {
+        const blob = report ? await this.getReportBlob(report) : null;
+        if (!blob) {
             this.showToast('Report not available', 'error');
             return;
         }
 
         try {
-            const response = await fetch(report.pdfData);
-            const blob = await response.blob();
             
             if (navigator.share && navigator.canShare) {
                 const file = new File([blob], report.filename, { type: 'application/pdf' });
@@ -1974,34 +2030,34 @@ class PoliceToolsApp {
         }
     }
 
-    deleteDailyReport(index) {
-        if (confirm('Delete this saved report?')) {
-            this.dailyReports.splice(index, 1);
-            localStorage.setItem('policeToolsDailyReports', JSON.stringify(this.dailyReports));
-            this.renderDailyReports();
-            this.showToast('Report deleted', 'info');
-        }
+    async deleteDailyReport(index) {
+        if (!confirm('Delete this saved report?')) return;
+
+        const report = this.dailyReports[index];
+
+        this.dailyReports.splice(index, 1);
+        localStorage.setItem('policeToolsDailyReports', JSON.stringify(this.dailyReports));
+
+        // El PDF vive en IndexedDB: sin esto se quedaria ocupando espacio
+        // para siempre, sin ninguna ficha que lo referencie.
+        if (report?.id) await window.PoliceToolsStore.borrar(report.id);
+
+        this.renderDailyReports();
+        document.dispatchEvent(new CustomEvent('reportschanged'));
+        this.showToast('Report deleted', 'info');
     }
 
     async downloadDailyReport(index) {
         const report = this.dailyReports[index];
-        if (!report || !report.pdfData) {
+        const blob = report ? await this.getReportBlob(report) : null;
+        if (!blob) {
             this.showToast('Report not available for download', 'error');
             return;
         }
 
         this.showLoading(true);
-        
+
         try {
-            // Convert base64 PDF data to blob
-            const pdfData = report.pdfData.split(',')[1];
-            const byteCharacters = atob(pdfData);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'application/pdf' });
             
             // Create download link
             const url = URL.createObjectURL(blob);
@@ -3782,7 +3838,15 @@ class PoliceToolsApp {
 }
 
 // Inicializar
-document.addEventListener('DOMContentLoaded', () => {
+// Se espera al store antes de construir la app: la migracion de los PDFs de
+// localStorage a IndexedDB reescribe la lista de reportes, y arrancar antes
+// dejaria en memoria la version vieja.
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await window.PoliceToolsStoreReady;
+    } catch (e) {
+        console.warn('Store no disponible, se sigue sin el:', e.message);
+    }
     window.app = new PoliceToolsApp();
 });
 

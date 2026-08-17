@@ -11,7 +11,7 @@
  *   - Plantillas PDF: cache-first (son pesadas y no cambian).
  */
 
-const VERSION = 'v1.3.2';
+const VERSION = 'v2.0.0';
 const SHELL_CACHE = `police-tools-shell-${VERSION}`;
 const PDF_CACHE = `police-tools-pdf-${VERSION}`;
 const RUNTIME_CACHE = `police-tools-runtime-${VERSION}`;
@@ -23,8 +23,13 @@ const SHELL_ASSETS = [
     './manifest.json',
     './css/styles.css',
     './css/mobile.css',
+    './css/themes.css',
     './js/app.js',
     './js/mobile.js',
+    './js/themes.js',
+    './js/navigation.js',
+    './js/data-io.js',
+    './js/report-store.js',
     './js/law-library-data.js',
     './js/pdf-generator.js',
     './js/pdf-mappings.js',

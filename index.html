@@ -14,9 +14,13 @@
     <meta name="format-detection" content="telephone=no"/>
     <title>Police Tools - Law Enforcement Productivity Suite</title>
     <link rel="stylesheet" href="css/styles.css"/>
+    <link rel="stylesheet" href="css/themes.css"/>
     <link rel="stylesheet" href="css/mobile.css"/>
     <link rel="manifest" href="manifest.json"/>
     <link rel="apple-touch-icon" href="assets/icon-192x192.png"/>
+    <!-- El tema se aplica antes de pintar el body: si se cargara al final,
+         se veria un destello con los colores del tema anterior. -->
+    <script src="js/themes.js"></script>
     <!-- Librerias servidas localmente: la app debe funcionar sin red -->
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="vendor/jszip.min.js"></script>
@@ -207,9 +211,87 @@
 
             <!-- Footer -->
             <footer class="app-footer">
-                <p>Police Tools v1.0 - Law Enforcement Productivity Suite</p>
+                <p>Police Tools v2.0 - Law Enforcement Productivity Suite</p>
             </footer>
         </main>
+
+        <!-- ============================================
+             BARRA DE NAVEGACION INFERIOR
+             Antes, pasar de una herramienta a otra obligaba a volver al
+             inicio. Esta barra deja las cinco zonas a un toque del pulgar
+             y sigue visible dentro de cada vista.
+             ============================================ -->
+        <nav class="bottom-nav" id="bottom-nav" aria-label="Main">
+            <button class="bn-item active" data-nav="home" aria-label="Home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path>
+                </svg>
+                <span>Home</span>
+            </button>
+
+            <button class="bn-item" data-nav="daily-reports" aria-label="Reports">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>Reports</span>
+                <i class="bn-badge" id="bn-reports-badge" hidden></i>
+            </button>
+
+            <button class="bn-fab" id="bn-new" aria-label="New document">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+
+            <button class="bn-item" data-nav="law-library" aria-label="Laws">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                <span>Laws</span>
+            </button>
+
+            <button class="bn-item" data-nav="panama" aria-label="Shifts">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>Shifts</span>
+            </button>
+        </nav>
+
+        <!-- Hoja del boton + -->
+        <div class="sheet-backdrop" id="new-sheet" hidden>
+            <div class="sheet">
+                <div class="sheet-handle"></div>
+                <h3>New document</h3>
+                <div class="sheet-list">
+                    <button class="sheet-item" data-new="patrol-log">
+                        <span class="si-ic patrol"></span>
+                        <span class="si-text"><b>Patrol Log</b><em>Activity log for the shift</em></span>
+                    </button>
+                    <button class="sheet-item" data-new="pmcs">
+                        <span class="si-ic pmcs"></span>
+                        <span class="si-text"><b>PMCS</b><em>Vehicle inspection</em></span>
+                    </button>
+                    <button class="sheet-item" data-new="guard-mount">
+                        <span class="si-ic guard"></span>
+                        <span class="si-text"><b>Guard Mount</b><em>Personnel roster</em></span>
+                    </button>
+                    <button class="sheet-item" data-new="interview">
+                        <span class="si-ic interview"></span>
+                        <span class="si-text"><b>Interview</b><em>Worksheet form</em></span>
+                    </button>
+                </div>
+                <button class="sheet-cancel" id="new-sheet-cancel">Cancel</button>
+            </div>
+        </div>
 
         <!-- Tab Views (Hidden by default) -->
         
@@ -1776,14 +1858,22 @@
             </div>
             <div class="view-content">
                 <div class="form-section">
-                    <h3>App Settings</h3>
-                    <div class="form-group">
-                        <label>Theme</label>
-                        <select id="theme-select">
-                            <option value="light">Light (Default)</option>
-                            <option value="dark">Dark</option>
-                        </select>
+                    <h3>Appearance</h3>
+                    <div class="theme-auto">
+                        <div class="theme-auto-text">
+                            <b>Auto by time of day</b>
+                            <span>Daylight until 18:00, Midnight until 22:00, Night Ops after that</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="theme-auto-toggle"/>
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
+                    <div id="theme-picker"></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>App Settings</h3>
                     <div class="form-group">
                         <label>Default Shift</label>
                         <select id="default-shift">
@@ -1799,6 +1889,34 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Email</h3>
+                    <p class="section-note">Used when you email documents from Daily Reports.</p>
+                    <div class="form-group">
+                        <label for="default-mail-to">Default recipient</label>
+                        <input type="email" id="default-mail-to" inputmode="email"
+                               autocapitalize="none" autocorrect="off" spellcheck="false"
+                               placeholder="supervisor@example.mil"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="default-mail-cc">Default Cc</label>
+                        <input type="email" id="default-mail-cc" inputmode="email"
+                               autocapitalize="none" autocorrect="off" spellcheck="false"/>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Backup</h3>
+                    <p class="section-note">
+                        Everything lives on this device only. If you clear the browser data or
+                        reinstall the app, it is gone. Keep a backup.
+                    </p>
+                    <div class="backup-status" id="backup-status"></div>
+                    <button class="btn btn-primary" id="backup-export">Save backup file</button>
+                    <button class="btn btn-secondary" id="backup-import">Restore from backup</button>
+                    <input type="file" id="backup-file" accept="application/json,.json" hidden/>
                 </div>
 
                 <div class="form-section">
@@ -2089,24 +2207,19 @@
     </div>
 
     <!-- Scripts -->
+    <script src="js/report-store.js"></script>
     <script src="js/pdf-mappings.js"></script>
     <script src="js/law-library-data.js"></script>
     <script src="js/pdf-generator.js"></script>
     <script src="js/app.js"></script>
     <script src="js/mobile.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/data-io.js"></script>
 
-    <!-- PWA Install Prompt & Dark Theme -->
+    <!-- PWA Install Prompt -->
     <script>
-        // Force Dark Theme as Default
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (!savedTheme) {
-                localStorage.setItem('theme', 'dark');
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            }
-        })();
+        // El tema lo aplica js/themes.js desde el <head>, antes de pintar.
+        // Aqui habia un segundo bloque que lo sobreescribia con 'dark'.
 
         // PWA Install Functionality
         let deferredPrompt;

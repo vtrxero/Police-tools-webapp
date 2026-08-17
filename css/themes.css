@@ -1,0 +1,441 @@
+/* ============================================
+   POLICE TOOLS - TEMAS
+   Se carga despues de styles.css y redefine sus variables, asi que un
+   cambio de tema repinta toda la app sin tocar ningun componente.
+   ============================================ */
+
+/* ============================================
+   TEMAS OSCUROS
+   ============================================ */
+
+/* Midnight - azul de medianoche. Tema oscuro por defecto. */
+[data-theme="midnight"] {
+    --bg-primary: #0b1220;
+    --bg-secondary: #111a2b;
+    --bg-card: #16223a;
+    --text-primary: #e8eefc;
+    --text-secondary: #93a3c0;
+    --text-muted: #6a7896;
+
+    --header-bg: #070d18;
+    --header-text: #ffffff;
+
+    --accent-blue: #4d8dff;
+    --accent-light-blue: #7fb0ff;
+    --accent-cyan: #22c9e0;
+    --accent-green: #2fd08a;
+    --accent-yellow: #f7c948;
+    --accent-red: #ff6b6b;
+    --accent-purple: #a78bfa;
+    --accent-orange: #ff9f45;
+
+    --shift-gradient: linear-gradient(135deg, #2f6df6 0%, #1a44b8 100%);
+
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* Carbon - gris neutro, sin tinte de color. */
+[data-theme="carbon"] {
+    --bg-primary: #121212;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #212121;
+    --text-primary: #f2f2f2;
+    --text-secondary: #a0a0a0;
+    --text-muted: #757575;
+
+    --header-bg: #000000;
+    --header-text: #ffffff;
+
+    --accent-blue: #64b5f6;
+    --accent-light-blue: #90caf9;
+    --accent-cyan: #4dd0e1;
+    --accent-green: #66bb6a;
+    --accent-yellow: #ffca28;
+    --accent-red: #ef5350;
+    --accent-purple: #ba68c8;
+    --accent-orange: #ffa726;
+
+    --shift-gradient: linear-gradient(135deg, #424242 0%, #212121 100%);
+
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.65);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
+    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Forest - verde de la librea de los vehiculos MP. */
+[data-theme="forest"] {
+    --bg-primary: #0d1410;
+    --bg-secondary: #131d16;
+    --bg-card: #1a271d;
+    --text-primary: #e7f0e8;
+    --text-secondary: #9ab09f;
+    --text-muted: #6d8272;
+
+    --header-bg: #08110a;
+    --header-text: #ffffff;
+
+    --accent-blue: #5aa9e6;
+    --accent-light-blue: #8cc7f0;
+    --accent-cyan: #35c4b5;
+    --accent-green: #74c489;
+    --accent-yellow: #c4d62e;
+    --accent-red: #e8776a;
+    --accent-purple: #b08ee0;
+    --accent-orange: #e0a82e;
+
+    --shift-gradient: linear-gradient(135deg, #2f7a4a 0%, #1a4a2c 100%);
+
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* Tactical - ambar sobre oliva, como los instrumentos de un vehiculo. */
+[data-theme="tactical"] {
+    --bg-primary: #14120c;
+    --bg-secondary: #1c1912;
+    --bg-card: #252118;
+    --text-primary: #f0e9d8;
+    --text-secondary: #b3a684;
+    --text-muted: #877c60;
+
+    --header-bg: #0d0b07;
+    --header-text: #ffd894;
+
+    --accent-blue: #7fa8c9;
+    --accent-light-blue: #a6c5dc;
+    --accent-cyan: #4fbfa8;
+    --accent-green: #9bbf4f;
+    --accent-yellow: #ffc94d;
+    --accent-red: #e07a5f;
+    --accent-purple: #b494c9;
+    --accent-orange: #ff9f45;
+
+    --shift-gradient: linear-gradient(135deg, #8a6d2f 0%, #4d3c17 100%);
+
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
+    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   NIGHT OPS
+   Rojo sobre negro. Aviacion y control de trafico usan luz roja porque
+   el ojo adaptado a la oscuridad apenas la percibe: la pantalla se lee
+   sin perder la vision nocturna, que tarda unos 20 minutos en volver.
+   ============================================ */
+[data-theme="nightops"] {
+    --bg-primary: #0a0503;
+    --bg-secondary: #120705;
+    --bg-card: #1a0a07;
+    --text-primary: #ff9c8a;
+    --text-secondary: #c4695c;
+    --text-muted: #8a4034;
+
+    --header-bg: #150604;
+    --header-text: #ff8a75;
+
+    /* Todos los acentos van al rojo: un solo punto azul o verde brillante
+       basta para arruinar la adaptacion a la oscuridad. */
+    --accent-blue: #d4685c;
+    --accent-light-blue: #e8877a;
+    --accent-cyan: #c46052;
+    --accent-green: #cf7a5e;
+    --accent-yellow: #e09a6a;
+    --accent-red: #ff6b52;
+    --accent-purple: #c4655f;
+    --accent-orange: #e8825c;
+
+    --shift-gradient: linear-gradient(135deg, #8e2f22 0%, #4a1109 100%);
+
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.75);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.8);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.6);
+    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.7);
+}
+
+/* Las imagenes y los iconos de color tambien deslumbran: se atenuan y
+   se tiñen para que la pantalla entera quede en la misma gama. */
+[data-theme="nightops"] img,
+[data-theme="nightops"] .card-icon svg,
+[data-theme="nightops"] canvas {
+    filter: sepia(1) saturate(2.4) hue-rotate(-32deg) brightness(0.72);
+}
+
+/* ============================================
+   TEMAS CLAROS
+   ============================================ */
+
+/* Daylight - claro y neutro. */
+[data-theme="daylight"] {
+    --bg-primary: #f4f6f9;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --text-primary: #10192b;
+    --text-secondary: #4a5568;
+    --text-muted: #8b95a5;
+
+    --header-bg: #1e3a5f;
+    --header-text: #ffffff;
+
+    --accent-blue: #2563eb;
+    --accent-light-blue: #3b82f6;
+    --accent-cyan: #0891b2;
+    --accent-green: #059669;
+    --accent-yellow: #d97706;
+    --accent-red: #dc2626;
+    --accent-purple: #7c3aed;
+    --accent-orange: #ea580c;
+
+    --shift-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+
+    --shadow: 0 1px 3px rgba(16, 25, 43, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(16, 25, 43, 0.09);
+    --shadow-lg: 0 10px 25px -5px rgba(16, 25, 43, 0.12);
+    --shadow-card: 0 4px 20px rgba(16, 25, 43, 0.07);
+    --shadow-hover: 0 8px 30px rgba(16, 25, 43, 0.13);
+}
+
+/* Paper - claro calido, menos brillo que el blanco puro. */
+[data-theme="paper"] {
+    --bg-primary: #efece4;
+    --bg-secondary: #faf8f3;
+    --bg-card: #ffffff;
+    --text-primary: #2a251c;
+    --text-secondary: #5c5346;
+    --text-muted: #8f8474;
+
+    --header-bg: #3d3527;
+    --header-text: #fdfbf6;
+
+    --accent-blue: #2f6f9e;
+    --accent-light-blue: #4a8cbd;
+    --accent-cyan: #0f7f8c;
+    --accent-green: #4a7c3f;
+    --accent-yellow: #b8860b;
+    --accent-red: #b03a2e;
+    --accent-purple: #6b4f9e;
+    --accent-orange: #c26a1a;
+
+    --shift-gradient: linear-gradient(135deg, #7a6a4f 0%, #4d4132 100%);
+
+    --shadow: 0 1px 3px rgba(42, 37, 28, 0.07);
+    --shadow-md: 0 4px 6px -1px rgba(42, 37, 28, 0.1);
+    --shadow-lg: 0 10px 25px -5px rgba(42, 37, 28, 0.13);
+    --shadow-card: 0 4px 20px rgba(42, 37, 28, 0.08);
+    --shadow-hover: 0 8px 30px rgba(42, 37, 28, 0.14);
+}
+
+/* ============================================
+   HIGH NOON
+   Contraste maximo para leer la pantalla a pleno sol del Caribe.
+   Negro sobre blanco, sin grises intermedios que el sol borra.
+   ============================================ */
+[data-theme="highnoon"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --text-primary: #000000;
+    --text-secondary: #1a1a1a;
+    --text-muted: #3d3d3d;
+
+    --header-bg: #000000;
+    --header-text: #ffffff;
+
+    --accent-blue: #0033cc;
+    --accent-light-blue: #0044ff;
+    --accent-cyan: #006670;
+    --accent-green: #006622;
+    --accent-yellow: #8a5a00;
+    --accent-red: #cc0000;
+    --accent-purple: #5500aa;
+    --accent-orange: #a33800;
+
+    --shift-gradient: linear-gradient(135deg, #0033cc 0%, #001f7a 100%);
+
+    --shadow: 0 0 0 1px #000000;
+    --shadow-md: 0 0 0 1px #000000;
+    --shadow-lg: 0 0 0 2px #000000;
+    --shadow-card: 0 0 0 1px #000000;
+    --shadow-hover: 0 0 0 2px #000000;
+}
+
+/* A pleno sol los bordes se leen mejor que las sombras */
+[data-theme="highnoon"] .menu-card,
+[data-theme="highnoon"] .document-card,
+[data-theme="highnoon"] .saved-entry-card,
+[data-theme="highnoon"] .form-section,
+[data-theme="highnoon"] .law-item {
+    border: 2px solid #000000;
+}
+
+[data-theme="highnoon"] .form-group input,
+[data-theme="highnoon"] .form-group select,
+[data-theme="highnoon"] .form-group textarea {
+    border-color: #000000;
+    font-weight: 600;
+}
+
+/* ============================================
+   COMPATIBILIDAD
+   Las versiones anteriores guardaban 'light' y 'dark'. Se mantienen como
+   alias para no romper los ajustes ya guardados en el dispositivo.
+   ============================================ */
+[data-theme="dark"] {
+    --bg-primary: #0b1220;
+    --bg-secondary: #111a2b;
+    --bg-card: #16223a;
+    --text-primary: #e8eefc;
+    --text-secondary: #93a3c0;
+    --text-muted: #6a7896;
+    --header-bg: #070d18;
+    --header-text: #ffffff;
+    --accent-blue: #4d8dff;
+    --accent-light-blue: #7fb0ff;
+    --accent-cyan: #22c9e0;
+    --accent-green: #2fd08a;
+    --accent-yellow: #f7c948;
+    --accent-red: #ff6b6b;
+    --accent-purple: #a78bfa;
+    --accent-orange: #ff9f45;
+    --shift-gradient: linear-gradient(135deg, #2f6df6 0%, #1a44b8 100%);
+}
+
+/* ============================================
+   SELECTOR DE TEMA
+   ============================================ */
+.theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.theme-swatch {
+    position: relative;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    background: none;
+    text-align: left;
+    min-height: 78px;
+    transition: border-color 0.15s ease, transform 0.08s ease;
+}
+
+.theme-swatch:active {
+    transform: scale(0.96);
+}
+
+.theme-swatch.selected {
+    border-color: var(--accent-blue);
+}
+
+/* Miniatura de la app con los colores reales del tema */
+.theme-swatch .sw-preview {
+    height: 52px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.theme-swatch .sw-bar {
+    height: 9px;
+    border-radius: 3px;
+}
+
+.theme-swatch .sw-row {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+.theme-swatch .sw-tile {
+    flex: 1;
+    border-radius: 4px;
+}
+
+.theme-swatch .sw-name {
+    display: block;
+    padding: 5px 8px 7px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-card);
+    letter-spacing: 0.01em;
+}
+
+.theme-swatch .sw-check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.theme-swatch.selected .sw-check {
+    display: flex;
+}
+
+/* Fila del modo automatico */
+.theme-auto {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    margin-top: 14px;
+    background: var(--bg-primary);
+    border-radius: 12px;
+}
+
+.theme-auto-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.theme-auto-text b {
+    display: block;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+}
+
+.theme-auto-text span {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.theme-group + .theme-group {
+    margin-top: 18px;
+}
+
+.theme-group > label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
