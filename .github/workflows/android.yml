@@ -38,7 +38,13 @@ jobs:
       contents: write
 
     steps:
+      # fetch-depth: 0 trae el historial entero. Por defecto checkout hace un
+      # clon somero de un commit, y entonces `git rev-list --count HEAD`
+      # devuelve 1: el versionCode habria bajado de 3 a 1, que es justo lo
+      # contrario de lo que hace falta para que Android instale encima.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Node
         uses: actions/setup-node@v4
@@ -91,8 +97,18 @@ jobs:
       # como actualizacion en vez de como reinstalacion.
       - name: Numero de version
         run: |
-          echo "PT_VERSION_CODE=$(git rev-list --count HEAD)" >> $GITHUB_ENV
-          echo "PT_VERSION_NAME=2.1.$(git rev-list --count HEAD)" >> $GITHUB_ENV
+          N=$(git rev-list --count HEAD)
+          # Todos los APK publicados hasta ahora declaraban versionCode 3. Si
+          # el recuento saliera por debajo —un clon somero, un historial
+          # reescrito— Android rechazaria la instalacion por ser una version
+          # anterior. Mejor parar aqui que publicar un APK que no entra.
+          if [ "$N" -lt 4 ]; then
+            echo "El recuento de commits da $N, menor que el 3 ya publicado."
+            echo "Probablemente el checkout es somero (falta fetch-depth: 0)."
+            exit 1
+          fi
+          echo "PT_VERSION_CODE=$N" >> $GITHUB_ENV
+          echo "PT_VERSION_NAME=2.1.$N" >> $GITHUB_ENV
 
       - name: Compilar debug
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon

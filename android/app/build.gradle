@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+// Numero de version. En CI sale del historial de git; el valor por
+// defecto es para compilar en local sin pasar la variable.
+def ptVersionCode = (System.getenv("PT_VERSION_CODE") ?: "3") as Integer
+
 android {
     namespace "mil.buchanan.policetools"
     compileSdk rootProject.ext.compileSdkVersion
@@ -13,8 +17,11 @@ android {
         // publicados tenian el mismo numero: se instalaban igual, pero el
         // instalador no podia distinguir una version nueva de una reinstalacion.
         //
-        // El valor por defecto es para compilar en local sin pasar la variable.
-        versionCode (System.getenv("PT_VERSION_CODE") ?: "3").toInteger()
+        // El valor va por una variable y no en linea: escrito como
+        // `versionCode (expr).toInteger()`, Groovy lee la llamada al metodo
+        // primero y aplica .toInteger() al valor que devuelve —que es null—,
+        // asi que la compilacion moria con "Value is null".
+        versionCode ptVersionCode
         versionName System.getenv("PT_VERSION_NAME") ?: "2.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
