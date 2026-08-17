@@ -3330,23 +3330,33 @@ class PoliceToolsApp {
         
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
+                const nuevaFecha = startDateInput?.value;
+                // Cambiar la fecha de inicio mueve el origen del ciclo, asi
+                // que el desfase que se cuadro sobre el calendario deja de
+                // valer. Si la fecha no cambia, se conserva: si no, guardar
+                // cualquier ajuste descuadraba el horario otra vez.
+                const mismaFecha = nuevaFecha === this.panamaConfig?.startDate;
+
                 const config = {
-                    startDate: startDateInput?.value,
+                    startDate: nuevaFecha,
                     startStatus: startStatusSelect?.value || 'off',
                     initialShift: initialShiftSelect?.value || 'day',
                     autoRotate: autoRotateCheckbox?.checked ?? true,
-                    customPattern: this.panamaConfig?.customPattern || null
+                    customPattern: this.panamaConfig?.customPattern || null,
+                    phase: mismaFecha ? (this.panamaConfig?.phase || 0) : 0
                 };
-                
+
                 if (!config.startDate) {
                     this.showToast('Please select a start date', 'error');
                     return;
                 }
-                
+
                 this.savePanamaConfig(config);
                 this.renderPanamaCalendar();
                 this.updatePanamaTodayStatus();
                 this.updateMainMenuPanamaBadge();
+                this.renderCalendar();
+                document.dispatchEvent(new CustomEvent('shiftschanged'));
                 this.showToast('Panama Schedule saved!', 'success');
             });
         }
@@ -3457,7 +3467,117 @@ class PoliceToolsApp {
         this.showToast('Pattern reset to default', 'info');
     }
     
+    /* ============================================
+       CUADRAR EL HORARIO
+       ============================================
+       Marcando dos o tres dias que uno sabe que trabaja, la app deduce la
+       fase en vez de que haya que adivinarla desde la configuracion. */
+
+    iniciarCuadrePanama() {
+        if (!this.panamaConfig?.startDate) {
+            this.showToast('Set the start date first', 'warning');
+            return;
+        }
+        this.cuadrandoPanama = true;
+        this.marcasPanama = {};
+        this.renderPanamaCalendar();
+        this.renderCuadrePanama();
+    }
+
+    cancelarCuadrePanama() {
+        this.cuadrandoPanama = false;
+        this.marcasPanama = {};
+        this.renderPanamaCalendar();
+        this.renderCuadrePanama();
+    }
+
+    /** Sin marca -> trabajo -> libre -> sin marca. */
+    marcarDiaPanama(iso) {
+        if (!this.cuadrandoPanama) return;
+        if (!this.marcasPanama) this.marcasPanama = {};
+
+        const actual = this.marcasPanama[iso];
+        if (actual === undefined) this.marcasPanama[iso] = true;
+        else if (actual === true) this.marcasPanama[iso] = false;
+        else delete this.marcasPanama[iso];
+
+        window.PoliceToolsMobile?.haptics.tap();
+        this.renderPanamaCalendar();
+        this.renderCuadrePanama();
+    }
+
+    aplicarCuadrePanama() {
+        const mejor = this.cuadrarPatron(this.marcasPanama);
+        if (!mejor) return;
+
+        this.panamaConfig.phase = mejor.desfase;
+        this.panamaConfig.startStatus = mejor.estado;
+        this.savePanamaConfig(this.panamaConfig);
+
+        this.cuadrandoPanama = false;
+        this.marcasPanama = {};
+
+        this.renderPanamaCalendar();
+        this.renderCuadrePanama();
+        this.renderPanamaToday?.();
+        this.renderCalendar?.();
+        document.dispatchEvent(new CustomEvent('shiftschanged'));
+
+        this.showToast(
+            mejor.aciertos === mejor.total
+                ? 'Schedule matched'
+                : `Best fit: ${mejor.aciertos} of ${mejor.total} days`,
+            mejor.aciertos === mejor.total ? 'success' : 'warning'
+        );
+    }
+
+    renderCuadrePanama() {
+        const caja = document.getElementById('panama-match');
+        if (!caja) return;
+
+        if (!this.cuadrandoPanama) {
+            caja.innerHTML = `
+                <p class="pm-help">Calendar not matching your real rotation? Mark a few days
+                you actually work and the app will line the cycle up.</p>
+                <button type="button" class="btn btn-secondary" id="pm-start">Match my schedule</button>
+            `;
+            caja.querySelector('#pm-start').addEventListener('click', () => this.iniciarCuadrePanama());
+            return;
+        }
+
+        const marcas = Object.entries(this.marcasPanama || {});
+        const trabaja = marcas.filter(([, v]) => v === true).length;
+        const libre = marcas.filter(([, v]) => v === false).length;
+        const mejor = marcas.length ? this.cuadrarPatron(this.marcasPanama) : null;
+
+        caja.innerHTML = `
+            <p class="pm-help"><b>Tap the days above.</b> Once for a day you work,
+            twice for a day off, three times to clear it. Two or three days is enough.</p>
+            <p class="pm-count">${trabaja} working · ${libre} off marked${
+                mejor ? ` — best fit matches ${mejor.aciertos} of ${mejor.total}` : ''}</p>
+            <button type="button" class="btn btn-primary" id="pm-apply" ${marcas.length ? '' : 'disabled'}>Apply</button>
+            <button type="button" class="btn btn-secondary" id="pm-cancel">Cancel</button>
+        `;
+        caja.querySelector('#pm-apply').addEventListener('click', () => this.aplicarCuadrePanama());
+        caja.querySelector('#pm-cancel').addEventListener('click', () => this.cancelarCuadrePanama());
+    }
+
+    /** Corre el ciclo un dia, para el ajuste fino. */
+    desplazarPanama(dias) {
+        if (!this.panamaConfig?.startDate) return;
+        const largo = (this.panamaConfig.customPattern || PoliceToolsApp.PATRON_PANAMA).length || 14;
+        this.panamaConfig.phase = ((((Number(this.panamaConfig.phase) || 0) + dias) % largo) + largo) % largo;
+        this.savePanamaConfig(this.panamaConfig);
+        this.renderPanamaCalendar();
+        this.renderCalendar?.();
+        document.dispatchEvent(new CustomEvent('shiftschanged'));
+    }
+
     setupPanamaCalendarNav() {
+        document.getElementById('pm-back')?.addEventListener('click', () => this.desplazarPanama(-1));
+        document.getElementById('pm-fwd')?.addEventListener('click', () => this.desplazarPanama(1));
+        this.renderCuadrePanama();
+
         const prevBtn = document.getElementById('panama-prev-month');
         const nextBtn = document.getElementById('panama-next-month');
         
@@ -3480,56 +3600,131 @@ class PoliceToolsApp {
     // User's 2-week pattern (14-day cycle):
     // Week 1: OFF, ON, ON, OFF, OFF, ON, ON
     // Week 2: ON, OFF, OFF, ON, ON, OFF, OFF
+    /* ============================================
+       PATRON DE PANAMA (2-2-3)
+       ============================================ */
+
+    /** OFF, ON, ON, OFF, OFF, ON, ON, ON, OFF, OFF, ON, ON, OFF, OFF */
+    static get PATRON_PANAMA() {
+        return [false, true, true, false, false, true, true, true, false, false, true, true, false, false];
+    }
+
+    /**
+     * 'YYYY-MM-DD' a fecha local.
+     *
+     * new Date('2026-08-19') se interpreta como medianoche UTC, que en Puerto
+     * Rico (UTC-4) es el 18 a las 20:00; el setHours(0,0,0,0) que venia
+     * despues lo dejaba en el dia 18. El ciclo entero arrancaba un dia antes,
+     * asi que marcar "el 19 fue OFF" pintaba el 19 como ON y no habia forma
+     * de cuadrar el calendario.
+     */
+    fechaLocal(iso) {
+        const [y, m, d] = String(iso).split('-').map(Number);
+        return new Date(y, (m || 1) - 1, d || 1);
+    }
+
+    /** Dias enteros entre dos fechas, sin que el horario de verano descuadre. */
+    diasEntre(desde, hasta) {
+        const a = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate());
+        const b = new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate());
+        return Math.round((b - a) / 86400000);
+    }
+
     getPanamaShiftForDate(date) {
         if (!this.panamaConfig?.startDate) return null;
-        
-        const startDate = new Date(this.panamaConfig.startDate);
+
+        const startDate = this.fechaLocal(this.panamaConfig.startDate);
         const targetDate = new Date(date);
-        
-        // Reset times for accurate day calculation
-        startDate.setHours(0, 0, 0, 0);
-        targetDate.setHours(0, 0, 0, 0);
-        
-        // Calculate days difference
-        const diffTime = targetDate.getTime() - startDate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays < 0) return { type: 'off', shift: null }; // Before start date
-        
-        // Get start status (was the start day ON or OFF?)
+
+        const diffDays = this.diasEntre(startDate, targetDate);
+
+        // Antes del inicio el patron tambien vale: el ciclo se repite hacia
+        // atras igual que hacia delante, y asi se puede mirar un mes pasado.
+        const pattern = this.panamaConfig.customPattern || PoliceToolsApp.PATRON_PANAMA;
+        const largo = pattern.length || 14;
+
+        /*
+         * Desfase del ciclo.
+         *
+         * "Ese dia fue OFF" no basta para situar el ciclo: en un 2-2-3 hay
+         * siete posiciones libres y siete de trabajo, asi que decir OFF deja
+         * siete fases posibles y la app elegia una. De ahi que el calendario
+         * no cuadrara aunque la fecha fuera correcta. phase guarda la que el
+         * oficial ajusto sobre el calendario.
+         */
+        const desfase = Number(this.panamaConfig.phase) || 0;
+
+        // El modulo de un negativo en JavaScript es negativo
+        const cyclePosition = (((diffDays + desfase) % largo) + largo) % largo;
+
         const startStatus = this.panamaConfig.startStatus || 'off';
-        
-        // 14-day cycle (2 weeks)
-        const cyclePosition = diffDays % 14;
-        
-        // Use custom pattern if available, otherwise use default
-        // Default: OFF, ON, ON, OFF, OFF, ON, ON, ON, OFF, OFF, ON, ON, OFF, OFF
-        const defaultPattern = [false, true, true, false, false, true, true, true, false, false, true, true, false, false];
-        const pattern = this.panamaConfig.customPattern || defaultPattern;
-        
-        // If start day was ON, invert the pattern
-        let isOn;
-        if (startStatus === 'off') {
-            isOn = pattern[cyclePosition];
-        } else {
-            isOn = !pattern[cyclePosition];
-        }
-        
+        // Empezar en ON es la rotacion de la otra dotacion, que es el mismo
+        // 2-2-3 desplazado, no un patron distinto.
+        const isOn = startStatus === 'off' ? pattern[cyclePosition] : !pattern[cyclePosition];
+
         if (!isOn) return { type: 'off', shift: null };
-        
-        // Determine shift type (day/night) - rotates every 2 months
-        let shiftType = this.panamaConfig.initialShift;
-        
-        if (this.panamaConfig.autoRotate) {
-            const twoMonthCycles = Math.floor(diffDays / 60);
-            if (twoMonthCycles % 2 === 1) {
-                shiftType = shiftType === 'day' ? 'night' : 'day';
+
+        return { type: 'on', shift: this.turnoPanamaDe(targetDate) };
+    }
+
+    /**
+     * Dia o noche. La rotacion iba con Math.floor(diffDays / 60): 60 dias no
+     * son dos meses, asi que el cambio se iba adelantando un poco cada vuelta
+     * y acababa cayendo a mitad de mes. Se cuenta por meses de calendario.
+     */
+    turnoPanamaDe(fecha) {
+        const inicial = this.panamaConfig?.initialShift === 'night' ? 'night' : 'day';
+        if (!this.panamaConfig?.autoRotate) return inicial;
+
+        const inicio = this.fechaLocal(this.panamaConfig.startDate);
+        const meses = (fecha.getFullYear() - inicio.getFullYear()) * 12
+                    + (fecha.getMonth() - inicio.getMonth());
+
+        // Bloques de dos meses, tambien hacia atras
+        const bloque = Math.floor(meses / 2);
+        const cambia = ((bloque % 2) + 2) % 2 === 1;
+
+        return cambia ? (inicial === 'day' ? 'night' : 'day') : inicial;
+    }
+
+    /**
+     * Busca el desfase que mejor encaja con los dias que el oficial marco
+     * sobre el calendario.
+     *
+     * Es lo que hace que el horario se pueda cuadrar: en vez de adivinar la
+     * fase, se tocan dos o tres dias que uno sabe que trabaja y la app prueba
+     * las 28 combinaciones (14 desfases x empezar en ON u OFF) y se queda con
+     * la que acierta en mas.
+     *
+     * marcas: { 'YYYY-MM-DD': true si se trabaja }
+     */
+    cuadrarPatron(marcas) {
+        const entradas = Object.entries(marcas || {});
+        if (!entradas.length || !this.panamaConfig?.startDate) return null;
+
+        const pattern = this.panamaConfig.customPattern || PoliceToolsApp.PATRON_PANAMA;
+        const largo = pattern.length || 14;
+        const inicio = this.fechaLocal(this.panamaConfig.startDate);
+
+        let mejor = null;
+        for (const estado of ['off', 'on']) {
+            for (let desfase = 0; desfase < largo; desfase++) {
+                let aciertos = 0;
+                for (const [iso, trabaja] of entradas) {
+                    const dias = this.diasEntre(inicio, this.fechaLocal(iso));
+                    const pos = (((dias + desfase) % largo) + largo) % largo;
+                    const on = estado === 'off' ? pattern[pos] : !pattern[pos];
+                    if (!!on === !!trabaja) aciertos++;
+                }
+                if (!mejor || aciertos > mejor.aciertos) {
+                    mejor = { desfase, estado, aciertos, total: entradas.length };
+                }
             }
         }
-        
-        return { type: 'on', shift: shiftType };
+        return mejor;
     }
-    
+
+
     renderPanamaCalendar() {
         const monthYearEl = document.getElementById('panama-month-year');
         const daysContainer = document.getElementById('panama-calendar-days');
@@ -3568,9 +3763,10 @@ class PoliceToolsApp {
             const date = new Date(year, month, day);
             const shift = this.getPanamaShiftForDate(date);
             const isToday = isCurrentMonth && today.getDate() === day;
-            html += this.renderCalendarDay(day, shift, false, isToday);
+            const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            html += this.renderCalendarDay(day, shift, false, isToday, iso);
         }
-        
+
         // Next month days (to fill the grid)
         const remainingCells = 42 - (firstDay + daysInMonth); // 6 rows x 7 cols = 42
         for (let day = 1; day <= remainingCells; day++) {
@@ -3578,17 +3774,24 @@ class PoliceToolsApp {
             const shift = this.getPanamaShiftForDate(date);
             html += this.renderCalendarDay(day, shift, true, false);
         }
-        
+
         daysContainer.innerHTML = html;
+
+        // En modo cuadrar, tocar un dia dice si de verdad se trabaja
+        if (this.cuadrandoPanama) {
+            daysContainer.querySelectorAll('.calendar-day[data-iso]').forEach(el => {
+                el.addEventListener('click', () => this.marcarDiaPanama(el.dataset.iso));
+            });
+        }
     }
-    
-    renderCalendarDay(day, shift, isOtherMonth, isToday) {
+
+    renderCalendarDay(day, shift, isOtherMonth, isToday, iso = null) {
         let className = 'calendar-day';
         let icon = '';
-        
+
         if (isOtherMonth) className += ' other-month';
         if (isToday) className += ' today';
-        
+
         if (shift?.type === 'on') {
             if (shift.shift === 'day') {
                 className += ' on-day';
@@ -3600,9 +3803,15 @@ class PoliceToolsApp {
         } else {
             className += ' off';
         }
-        
+
+        // Marcas que el oficial puso al cuadrar el horario
+        const marca = iso && this.marcasPanama ? this.marcasPanama[iso] : undefined;
+        if (marca === true) className += ' marca-on';
+        if (marca === false) className += ' marca-off';
+        if (this.cuadrandoPanama && iso) className += ' cuadrable';
+
         return `
-            <div class="${className}">
+            <div class="${className}"${iso ? ` data-iso="${iso}"` : ''}>
                 <span class="day-number">${day}</span>
                 ${icon ? `<span class="day-shift-icon">${icon}</span>` : ''}
             </div>

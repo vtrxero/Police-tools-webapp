@@ -72,7 +72,13 @@
         const turno = home()?.turnoDeHoy?.();
         if (!turno || turno.clave === 'off') return null;
 
-        const casilla = { days: 'shift_days', swings: 'shift_swings', mid: 'shift_mid' }[turno.clave];
+        // El Patrol Log solo tiene DAYS / SWINGS / MID. Los dos turnos de 12
+        // horas de Panama caen en el que mas se le parece: el de dia en DAYS
+        // y el de noche en MID.
+        const casilla = {
+            days: 'shift_days', swings: 'shift_swings', mid: 'shift_mid',
+            day: 'shift_days', night: 'shift_mid'
+        }[turno.clave];
         if (!casilla) return null;
 
         return { fecha: hoyISO(), casilla, etiqueta: turno.etiqueta, rango: turno.rango };

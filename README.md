@@ -147,6 +147,30 @@ Las fechas ya no se construyen con `new Date('2026-11-11')`: eso se interpreta
 como UTC y en Puerto Rico (UTC−4) retrocedía un día, por lo que Veterans Day
 aparecía el 10.
 
+## Horario de Panamá
+
+Ciclo 2-2-3 de catorce días, con rotación día/noche cada dos meses. Tres cosas
+impedían cuadrarlo:
+
+- **El ciclo arrancaba un día antes.** `new Date('2026-08-19')` se interpreta
+  como medianoche UTC, que en Puerto Rico es el 18 a las 20:00, y el
+  `setHours(0,0,0,0)` que venía detrás lo dejaba en el día 18. Marcar «el 19
+  fue OFF» pintaba el 19 como ON.
+- **Decir «ese día fue OFF» no sitúa el ciclo.** En un 2-2-3 hay siete
+  posiciones libres, así que esa respuesta deja siete fases posibles y la app
+  elegía una. Si tu rotación no empezaba justo en el límite del patrón, no
+  había forma de expresarla. Ahora se marcan sobre el calendario dos o tres
+  días que se trabajan de verdad y la app prueba las 28 combinaciones (14
+  desfases × empezar en ON u OFF) y se queda con la que más acierta. También
+  hay un ajuste de ±1 día.
+- **La rotación iba cada 60 días**, no cada dos meses, así que el cambio se
+  adelantaba un poco en cada vuelta y acababa cayendo a mitad de mes. Se
+  cuenta por meses de calendario.
+
+Los turnos de Panamá son de 12 horas (0600-1800 y 1800-0600), que es lo que
+dice su propia configuración. El inicio anunciaba «Day Shift 0700-1500» porque
+usaba los horarios de 8 horas del turno por defecto.
+
 ## Temas
 
 Ocho paletas: cuatro oscuras (Midnight, Carbon, Forest, Tactical), tres claras

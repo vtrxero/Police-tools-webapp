@@ -40,7 +40,17 @@
      * mientras el patron estaba sin configurar, porque entonces cae al turno
      * por defecto de los ajustes.
      */
-    const DE_PANAMA = { day: 'days', night: 'mid' };
+    /*
+     * El patron de Panama son turnos de 12 horas (06:00-18:00 y 18:00-06:00),
+     * que es lo que dice su propia configuracion. HORARIOS son los de 8 horas
+     * del turno por defecto. Mapear uno al otro hacia que el inicio anunciara
+     * "Day Shift 0700-1500" mientras el calendario de Panama decia 06:00-18:00,
+     * y la cuenta atras del turno salia con el horario que no era.
+     */
+    const PANAMA = {
+        day:   { ini: 6 * 60,  fin: 18 * 60, etiqueta: 'Day Shift',   rango: '0600-1800' },
+        night: { ini: 18 * 60, fin: 6 * 60,  etiqueta: 'Night Shift', rango: '1800-0600' }
+    };
 
     function turnoDeFecha(fecha) {
         // Si hay calendario Panama configurado, manda ese
@@ -50,8 +60,8 @@
                 return { clave: 'off', etiqueta: 'Off duty', rango: '' };
             }
             if (panama && panama.type === 'on') {
-                const clave = DE_PANAMA[panama.shift] || 'days';
-                return { clave, ...HORARIOS[clave] };
+                const clave = panama.shift === 'night' ? 'night' : 'day';
+                return { clave, ...PANAMA[clave] };
             }
         } catch (e) {}
 
