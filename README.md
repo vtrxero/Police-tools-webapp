@@ -52,16 +52,38 @@ Para conseguirlo se generan las apariencias con `updateFieldAppearances()` y se
 marca `NeedAppearances` en el AcroForm, de modo que los visores que no leen las
 apariencias precalculadas las regeneren ellos.
 
-### Plantilla ausente: `patrol_log.pdf`
+Los cuatro documentos se generan sobre la plantilla oficial correspondiente.
+Si falta una plantilla, la generación se detiene con un error explícito en vez
+de producir un sustituto.
 
-El paquete original no incluía `pdf-templates/patrol_log.pdf`, así que la
-generación del Patrol Log fallaba por completo. Ahora la app detecta que la
-plantilla no está y compone el formulario desde cero
-(`generatePatrolFromScratch`), con la misma estructura que el impreso oficial y
-con campos AcroForm reales, no texto fijo.
+### Tabla de misiones del Patrol Log
 
-Si consigues el `patrol_log.pdf` original, déjalo en `pdf-templates/` y la app lo
-usará automáticamente: la detección es en tiempo de ejecución.
+`patrol_log.pdf` no numera sus campos de forma coherente entre páginas:
+
+- Página 1: filas 1-26 completas (IN, OUT, DESCRIPTION, REMARKS).
+- Página 2: `INRow27..65`, pero la descripción va desfasada un número (la fila
+  de `INRow27` lleva `...WhyRow26`) hasta que la ausencia de `...WhyRow42`
+  reajusta la cuenta.
+- `OUTRow` solo llega a 39 y esos campos están en las filas finales.
+- `REMARKS` solo existe en la página 1.
+
+Rellenar por número mandaba la hora de salida de la misión 27 a 26 filas más
+abajo y descartaba sus observaciones sin avisar. Las filas se localizan ahora
+por su altura en la página (`buildPatrolRows`), de modo que cada dato cae en su
+celda impresa.
+
+Dos defectos de la plantilla se corrigen al vuelo:
+
+- `MISSION DESCRIPTION...Row26` tiene dos widgets (última fila de la página 1 y
+  primera de la página 2). Al ser un único campo, ambas filas mostraban el mismo
+  texto. `separarCamposCompartidos` lo divide en dos campos independientes.
+- La hoja de continuación dibuja las columnas OUT y REMARKS pero no define
+  widgets para la mayoría de sus filas. `completarCeldasFaltantes` los crea
+  tomando la posición de las columnas que sí existen, que comparten x y ancho
+  en ambas páginas.
+
+Si hay más misiones que filas (65), la app avisa en vez de descartarlas
+en silencio.
 
 ### Rejilla del PMCS
 

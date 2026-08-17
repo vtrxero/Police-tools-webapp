@@ -2604,8 +2604,18 @@ class PoliceToolsApp {
             }
             
             console.log('%c========== PDF GENERATED ==========', 'color: #10b981; font-size: 14px; font-weight: bold;');
-            
+
             this.showLoading(false);
+
+            // El formulario oficial tiene un numero fijo de filas. Si se
+            // desbordan, hay que decirlo: antes se descartaban en silencio.
+            if (pdfDoc.__misionesOmitidas) {
+                this.showToast(
+                    `${pdfDoc.__misionesOmitidas} mision(es) no caben en el formulario`,
+                    'warning'
+                );
+            }
+
             return { pdfDoc, filename };
             
         } catch (error) {

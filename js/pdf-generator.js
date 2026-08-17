@@ -400,14 +400,14 @@ class PDFGenerator {
         const mapping = getPDFMapping('patrol');
         const templatePath = getTemplatePath('patrol');
 
-        // La plantilla oficial patrol_log.pdf no viene incluida en el paquete.
-        // En vez de reventar, se compone un formulario equivalente desde cero.
+        // Sin plantilla no se genera nada: el documento tiene que salir del
+        // formulario oficial, no de una reconstruccion aproximada.
         if (!(await this.templateExists(templatePath))) {
-            this.debug('WARN', {
-                action: 'Plantilla patrol_log.pdf ausente, generando layout propio',
-                path: templatePath
-            });
-            return await this.generatePatrolFromScratch(formData, missionData);
+            this.debug('ERROR', { action: 'Plantilla ausente', path: templatePath });
+            throw new Error(
+                `Falta la plantilla ${templatePath}. ` +
+                'Colocala en pdf-templates/ para poder generar el Patrol Log.'
+            );
         }
 
         const pdfDoc = await this.loadTemplate(templatePath);
@@ -450,32 +450,67 @@ class PDFGenerator {
         
         // Fill missions
         if (missionData && missionData.length > 0) {
-            const maxRows = Math.min(missionData.length, 65); // PDF has 65 rows
-            
+            // Antes de mapear filas hay que deshacer los campos que la
+            // plantilla reutiliza en dos filas distintas
+            this.separarCamposCompartidos(pdfDoc);
+            const filas = this.buildPatrolRows(pdfDoc);
+            const maxRows = Math.min(missionData.length, filas.length);
+            const sinSitio = { out: 0, desc: 0, remark: 0 };
+
             for (let i = 0; i < maxRows; i++) {
                 const mission = missionData[i];
-                const rowNum = i + 1;
-                
-                // IN time
-                if (mission.time_in) {
-                    this.fillTextField(form, `INRow${rowNum}`, mission.time_in, { debug: false });
+                const fila = filas[i];
+                if (!fila) break;
+
+                if (mission.time_in && fila.in) {
+                    this.escribirEnCampo(fila.in, mission.time_in);
+                    filledCount++;
                 }
-                
-                // OUT time
+
                 if (mission.time_out) {
-                    this.fillTextField(form, `OUTRow${rowNum}`, mission.time_out, { debug: false });
+                    if (fila.out) { this.escribirEnCampo(fila.out, mission.time_out); filledCount++; }
+                    else sinSitio.out++;
                 }
-                
-                // Mission Description - usar el campo correcto del PDF
+
                 if (mission.description) {
-                    this.fillTextField(form, `MISSION DESCRIPTION Who What Where WhyRow${rowNum}`, mission.description, { debug: false });
+                    if (fila.desc) { this.escribirEnCampo(fila.desc, mission.description); filledCount++; }
+                    else sinSitio.desc++;
                 }
-                
-                // Remarks/Disposition
+
                 if (mission.remarks) {
-                    this.fillTextField(form, `REMARKS DispositionRow${rowNum}`, mission.remarks, { debug: false });
+                    if (fila.remark) { this.escribirEnCampo(fila.remark, mission.remarks); filledCount++; }
+                    else sinSitio.remark++;
                 }
             }
+
+            // La hoja de continuacion no tiene columna de observaciones ni de
+            // salida en todas sus filas: si se pierde algun dato hay que
+            // decirlo, no dejarlo caer en silencio como antes.
+            if (sinSitio.out || sinSitio.desc || sinSitio.remark) {
+                this.debug('WARN', {
+                    action: 'Datos de mision sin celda en la plantilla',
+                    horasSalidaPerdidas: sinSitio.out,
+                    descripcionesPerdidas: sinSitio.desc,
+                    observacionesPerdidas: sinSitio.remark
+                });
+                pdfDoc.__datosSinSitio = sinSitio;
+            }
+
+            if (missionData.length > filas.length) {
+                this.debug('WARN', {
+                    action: 'Mas misiones que filas en el formulario',
+                    misiones: missionData.length,
+                    filas: filas.length,
+                    omitidas: missionData.length - filas.length
+                });
+                pdfDoc.__misionesOmitidas = missionData.length - filas.length;
+            }
+
+            this.debug('SUCCESS', {
+                action: 'Tabla de misiones rellenada',
+                misiones: maxRows,
+                filasDisponibles: filas.length
+            });
         }
         
         // Update appearances
@@ -484,306 +519,6 @@ class PDFGenerator {
         } catch (e) {}
         
         this.debug('SUCCESS', { template: 'patrol', filled: filledCount });
-        return pdfDoc;
-    }
-
-    // ============================================
-    // PATROL LOG SIN PLANTILLA
-    // Reproduce la estructura del formulario oficial (cabecera, tabla de
-    // misiones, combustible/mantenimiento, citaciones y firmas) dibujandolo
-    // directamente, para que la funcion sirva aunque falte el PDF base.
-    // ============================================
-    async generatePatrolFromScratch(formData, missionData) {
-        const { PDFDocument, StandardFonts, rgb } = this.PDFLib;
-
-        const pdfDoc = await PDFDocument.create();
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-        const form = pdfDoc.getForm();
-
-        // Letter apaisado: la tabla de misiones necesita ancho
-        const PAGE_W = 792, PAGE_H = 612;
-        const M = 28;                       // margen
-        const INK = rgb(0, 0, 0);
-        const LINE = rgb(0.45, 0.45, 0.45);
-        const HEAD_BG = rgb(0.88, 0.90, 0.94);
-
-        const val = (k) => this.getFieldValue(formData, k);
-
-        let page = null;
-        let y = 0;
-
-        const newPage = () => {
-            page = pdfDoc.addPage([PAGE_W, PAGE_H]);
-            y = PAGE_H - M;
-            return page;
-        };
-
-        // Texto fijo (etiquetas, titulos): no editable
-        const text = (str, x, yy, size = 9, f = font) => {
-            page.drawText(String(str ?? ''), { x, y: yy, size, font: f, color: INK });
-        };
-
-        const line = (x1, y1, x2, y2, w = 0.6) => {
-            page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: w, color: LINE });
-        };
-
-        const box = (x, yy, w, h, fill) => {
-            page.drawRectangle({
-                x, y: yy, width: w, height: h,
-                borderColor: LINE, borderWidth: 0.6,
-                color: fill || undefined
-            });
-        };
-
-        /**
-         * Campo de formulario editable.
-         *
-         * Es la diferencia entre un PDF impreso y uno util: el oficial puede
-         * corregir una hora o añadir una mision en el visor sin volver a la app.
-         * Los nombres se llevan un contador porque un AcroForm no admite dos
-         * campos con el mismo nombre completo.
-         */
-        const usados = new Set();
-        const campo = (nombre, valor, x, yy, w, h, opciones = {}) => {
-            let unico = nombre;
-            let n = 2;
-            while (usados.has(unico)) unico = `${nombre}_${n++}`;
-            usados.add(unico);
-
-            const f = form.createTextField(unico);
-            if (valor) f.setText(String(valor));
-            if (opciones.multiline) f.enableMultiline();
-
-            f.addToPage(page, {
-                x, y: yy, width: w, height: h,
-                borderWidth: 0,              // el recuadro ya lo dibuja box()
-                backgroundColor: undefined,
-                textColor: INK,
-                font
-            });
-
-            // El tamaño se fija despues de addToPage: es esa llamada la que
-            // crea la entrada /DA que setFontSize necesita para existir.
-            try { f.setFontSize(opciones.size || 9); } catch (e) {}
-
-            return f;
-        };
-
-        // ---------- Cabecera ----------
-        newPage();
-
-        text('DAILY PATROL / VEHICLE LOG', M, y - 12, 14, bold);
-
-        const shiftOn = (k) => {
-            const v = val(k);
-            return v === 'on' || v === 'true' || v === 'X' || v === true;
-        };
-        const shifts = [];
-        if (shiftOn('shift_days')) shifts.push('DAYS');
-        if (shiftOn('shift_swings')) shifts.push('SWINGS');
-        if (shiftOn('shift_mid')) shifts.push('MID');
-
-        text('SHIFT:', PAGE_W - M - 200, y - 12, 10, bold);
-        campo('Shift', shifts.join(' / '), PAGE_W - M - 155, y - 17, 155, 16, { size: 10 });
-
-        y -= 24;
-        line(M, y, PAGE_W - M, y, 1.2);
-        y -= 6;
-
-        const vehicle = val('vehicle');
-        const radio = val('radio_no');
-        const vehicleRadio = vehicle && radio ? `${vehicle} / ${radio}` : (vehicle || radio);
-
-        // [etiqueta, valor, nombre del campo en el AcroForm]
-        const headerRows = [
-            [
-                ['PATROL', val('patrol'), 'Patrol'],
-                ['DATE', val('date'), 'Date'],
-                ['OFFICER', val('police_name'), 'Officer'],
-                ['MID', val('mid'), 'MID'],
-                ['VEHICLE / RADIO', vehicleRadio, 'Vehicle Radio No']
-            ],
-            [
-                ['BEGIN MILEAGE', val('beginning_mileage'), 'Beginning'],
-                ['END MILEAGE', val('ending_mileage'), 'Ending Mileage'],
-                ['TOTAL MILEAGE', val('total_mileage'), 'Total Mileage'],
-                ['FUEL', val('fuel'), 'Fuel 1'],
-                ['GSA / CARD COST', val('fuel_cost'), 'GSA or Credit Card Total Cost']
-            ]
-        ];
-
-        const colW = (PAGE_W - M * 2) / 5;
-        for (const row of headerRows) {
-            const rowH = 30;
-            row.forEach(([label, value, fieldName], i) => {
-                const x = M + i * colW;
-                box(x, y - rowH, colW, rowH);
-                text(label, x + 4, y - 11, 6.5, bold);
-                campo(fieldName, value, x + 3, y - rowH + 2, colW - 6, 15);
-            });
-            y -= rowH;
-        }
-
-        y -= 14;
-
-        // ---------- Tabla de misiones ----------
-        text('MISSION / ACTIVITY LOG', M, y, 10, bold);
-        y -= 8;
-
-        const cols = [
-            { label: 'IN', w: 46, key: 'time_in', field: 'INRow' },
-            { label: 'OUT', w: 46, key: 'time_out', field: 'OUTRow' },
-            {
-                label: 'MISSION DESCRIPTION (Who / What / Where / Why)',
-                w: 400, key: 'description',
-                field: 'MISSION DESCRIPTION Who What Where WhyRow'
-            },
-            {
-                label: 'REMARKS / DISPOSITION',
-                w: PAGE_W - M * 2 - 46 - 46 - 400, key: 'remarks',
-                field: 'REMARKS DispositionRow'
-            }
-        ];
-
-        // Recorta una etiqueta fija para que no se salga de su celda
-        const fit = (str, maxW, size) => {
-            let s = String(str ?? '');
-            if (!s) return s;
-            if (font.widthOfTextAtSize(s, size) <= maxW) return s;
-            while (s.length > 1 && font.widthOfTextAtSize(s + '...', size) > maxW) {
-                s = s.slice(0, -1);
-            }
-            return s + '...';
-        };
-
-        const ROW_H = 16;
-        const drawTableHeader = () => {
-            let x = M;
-            for (const c of cols) {
-                box(x, y - ROW_H, c.w, ROW_H, HEAD_BG);
-                text(fit(c.label, c.w - 6, 6.5), x + 3, y - 11, 6.5, bold);
-                x += c.w;
-            }
-            y -= ROW_H;
-        };
-        drawTableHeader();
-
-        const missions = Array.isArray(missionData) ? missionData : [];
-        // 26 filas como el formulario oficial: las vacias quedan como campos
-        // en blanco listos para escribir, no como huecos muertos.
-        const totalRows = Math.max(26, missions.length);
-
-        for (let i = 0; i < totalRows; i++) {
-            if (y - ROW_H < M + 40) {
-                newPage();
-                text('MISSION / ACTIVITY LOG (cont.)', M, y - 10, 10, bold);
-                y -= 20;
-                drawTableHeader();
-            }
-
-            const m = missions[i] || {};
-            const rowNum = i + 1;
-            let x = M;
-            for (const c of cols) {
-                box(x, y - ROW_H, c.w, ROW_H);
-                campo(`${c.field}${rowNum}`, m[c.key], x + 2, y - ROW_H + 1.5, c.w - 4, 13, { size: 8 });
-                x += c.w;
-            }
-            y -= ROW_H;
-        }
-
-        // ---------- Mantenimiento y citaciones ----------
-        if (y - 150 < M) newPage();
-
-        y -= 18;
-        text('MAINTENANCE', M, y, 9, bold);
-        text('CITATIONS ISSUED', M + 300, y, 9, bold);
-        y -= 6;
-
-        const maint = [
-            ['Fuel 1', val('fuel'), 'Fuel 1'],
-            ['Fuel 2', val('fuel2'), 'Fuel 2'],
-            ['Oil / QTR', val('oil'), 'OIL QTR'],
-            ['Other', val('other_maintenance'), 'Other']
-        ];
-        const cites = [
-            ['Moving', val('citations_moving'), 'Moving 1'],
-            ['Non-Moving', val('citations_nonmoving'), 'Non Moving 1'],
-            ['DD FM 1805', val('dd_fm_1805'), 'DD FM 1805'],
-            ['DA FM 1408', val('da_fm_1408'), 'DA FM 1408'],
-            ['Verbal Warning', val('verbal_warning'), 'Verbal Warning']
-        ];
-
-        const startY = y;
-
-        let my = startY;
-        for (const [label, value, fieldName] of maint) {
-            box(M, my - 18, 140, 18);
-            box(M + 140, my - 18, 120, 18);
-            text(label, M + 4, my - 12, 7.5, bold);
-            campo(fieldName, value, M + 143, my - 16, 114, 14, { size: 8.5 });
-            my -= 18;
-        }
-
-        let cy = startY;
-        for (const [label, value, fieldName] of cites) {
-            box(M + 300, cy - 18, 140, 18);
-            box(M + 440, cy - 18, 120, 18);
-            text(label, M + 304, cy - 12, 7.5, bold);
-            campo(fieldName, value, M + 443, cy - 16, 114, 14, { size: 8.5 });
-            cy -= 18;
-        }
-
-        y = Math.min(my, cy) - 16;
-
-        // ---------- Comentarios ----------
-        if (y - 60 < M) newPage();
-        text('COMMENTS', M, y, 9, bold);
-        y -= 6;
-        box(M, y - 52, PAGE_W - M * 2, 52);
-        campo('COMMENTS', val('comments'), M + 4, y - 50, PAGE_W - M * 2 - 8, 48, {
-            multiline: true,
-            size: 8.5
-        });
-        y -= 68;
-
-        // ---------- Firmas ----------
-        if (y - 50 < M) newPage();
-        const sigs = [
-            ['1. PRINT / SIGN', val('sig1_print'), val('sig1_sign'), '1 PRINT', 'SIGN'],
-            ['2. PRINT / SIGN', val('sig2_print'), val('sig2_sign'), '2 PRINT', 'SIGN_2'],
-            ['3. PS PRINT / SIGN', val('sig3_print'), val('sig3_sign'), '3 PS PRINT', 'SIGN_3']
-        ];
-        const sigW = (PAGE_W - M * 2) / 3;
-        sigs.forEach(([label, printed, signed, fPrint, fSign], i) => {
-            const x = M + i * sigW;
-            box(x, y - 44, sigW, 44);
-            text(label, x + 4, y - 11, 6.5, bold);
-            campo(fPrint, printed, x + 3, y - 28, sigW - 8, 14);
-            line(x + 4, y - 34, x + sigW - 6, y - 34);
-            campo(fSign, signed, x + 3, y - 43, sigW - 8, 12, { size: 8 });
-        });
-
-        // ---------- Pie ----------
-        const pages = pdfDoc.getPages();
-        pages.forEach((p, i) => {
-            p.drawText(
-                `Generated by Police Tools  -  Page ${i + 1} of ${pages.length}`,
-                { x: M, y: 14, size: 7, font, color: rgb(0.45, 0.45, 0.45) }
-            );
-        });
-
-        // Deja los valores visibles manteniendo los campos editables
-        this.ensureFillable(pdfDoc);
-
-        this.debug('SUCCESS', {
-            template: 'patrol (generado sin plantilla)',
-            missions: missions.length,
-            campos: form.getFields().length,
-            pages: pages.length
-        });
-
         return pdfDoc;
     }
 
@@ -941,6 +676,287 @@ class PDFGenerator {
         });
         
         return pdfDoc;
+    }
+
+    // ============================================
+    // TABLA DE MISIONES DEL PATROL LOG POR GEOMETRIA
+    // ============================================
+    /**
+     * Localiza las filas de la tabla de misiones por su posicion.
+     *
+     * La numeracion de patrol_log.pdf no es coherente entre paginas:
+     *   - Pagina 1: filas 1-26 completas (IN, OUT, DESCRIPTION, REMARKS).
+     *   - Pagina 2: INRow27..65, pero la descripcion va desfasada un numero
+     *     (la fila de INRow27 lleva "...WhyRow26") hasta que la ausencia de
+     *     "...WhyRow42" reajusta la cuenta.
+     *   - OUTRow solo llega a 39, y esos campos estan en las filas finales.
+     *   - REMARKS solo existe en la pagina 1.
+     *
+     * Rellenar por numero, como se hacia antes, mandaba la hora de salida de
+     * la mision 27 a 26 filas mas abajo y descartaba sus observaciones en
+     * silencio. Agrupando por altura cada dato cae en su fila impresa.
+     */
+    /**
+     * Separa los campos que aparecen impresos en dos filas distintas.
+     *
+     * En patrol_log.pdf, "MISSION DESCRIPTION...Row26" tiene dos widgets: uno
+     * en la ultima fila de la pagina 1 y otro en la primera de la pagina 2.
+     * Al ser un unico campo del AcroForm, ambas filas muestran siempre el
+     * mismo texto, y la descripcion de una de las dos misiones se perdia.
+     *
+     * Se sustituye por un campo independiente en cada posicion, conservando
+     * el nombre original en el primero para no romper nada que lo busque.
+     */
+    separarCamposCompartidos(pdfDoc) {
+        const { PDFTextField } = this.PDFLib;
+        const form = pdfDoc.getForm();
+        const paginas = pdfDoc.getPages();
+
+        const compartidos = [];
+        for (const field of form.getFields()) {
+            if (!(field instanceof PDFTextField)) continue;
+            let ws = [];
+            try { ws = field.acroField.getWidgets(); } catch (e) { continue; }
+            if (ws.length < 2) continue;
+
+            const posiciones = [];
+            for (const w of ws) {
+                try {
+                    const r = w.getRectangle();
+                    posiciones.push({ pagina: paginas.findIndex(p => p.ref === w.P()), rect: r });
+                } catch (e) {}
+            }
+            if (posiciones.length < 2) continue;
+
+            // El cuerpo de letra se toma de una fila hermana: el campo
+            // compartido suele venir en automatico (0 Tf) y quedaria distinto
+            // al resto de la columna.
+            let fontSize = 14;
+            try {
+                const hermano = form.getField(field.getName().replace(/(\d+)$/, (m) => String(+m - 1)));
+                const da = String(hermano.acroField.dict.get(this.PDFLib.PDFName.of('DA')) || '');
+                const m = da.match(/([\d.]+)\s+Tf/);
+                if (m && +m[1] > 0) fontSize = +m[1];
+            } catch (e) {}
+
+            compartidos.push({ nombre: field.getName(), texto: field.getText() || '', posiciones, fontSize });
+        }
+
+        for (const c of compartidos) {
+            try {
+                form.removeField(form.getField(c.nombre));
+            } catch (e) {
+                this.debug('WARN', { action: 'No se pudo separar el campo', campo: c.nombre, error: e.message });
+                continue;
+            }
+
+            c.posiciones.forEach((pos, i) => {
+                // El primero conserva el nombre original
+                const nombre = i === 0 ? c.nombre : `${c.nombre}_cont${i}`;
+                const pagina = pdfDoc.getPage(pos.pagina < 0 ? 0 : pos.pagina);
+                try {
+                    const nuevo = form.createTextField(nombre);
+                    if (i === 0 && c.texto) nuevo.setText(c.texto);
+                    nuevo.addToPage(pagina, {
+                        x: pos.rect.x,
+                        y: pos.rect.y,
+                        width: pos.rect.width,
+                        height: pos.rect.height,
+                        borderWidth: 0
+                    });
+
+                    // Mismo cuerpo que el resto de descripciones de la tabla
+                    try { nuevo.setFontSize(c.fontSize || 14); } catch (e) {}
+
+                    // addToPage añade /MK (apariencia del marco), que dibuja un
+                    // recuadro que las celdas originales no tienen
+                    try {
+                        for (const w of nuevo.acroField.getWidgets()) {
+                            w.dict.delete(this.PDFLib.PDFName.of('MK'));
+                        }
+                    } catch (e) {}
+                } catch (e) {
+                    this.debug('WARN', { action: 'No se pudo recrear el campo', campo: nombre, error: e.message });
+                }
+            });
+
+            this.debug('SUCCESS', {
+                action: 'Campo compartido separado en filas independientes',
+                campo: c.nombre,
+                copias: c.posiciones.length
+            });
+        }
+
+        return compartidos.length;
+    }
+
+    buildPatrolRows(pdfDoc) {
+        const { PDFTextField } = this.PDFLib;
+        const paginas = pdfDoc.getPages();
+        const widgets = [];
+
+        for (const field of pdfDoc.getForm().getFields()) {
+            if (!(field instanceof PDFTextField)) continue;
+            // _contN son las copias creadas al separar un campo compartido
+            if (!/Row\d+(_cont\d+)?$/.test(field.getName())) continue;
+
+            let anotaciones = [];
+            try { anotaciones = field.acroField.getWidgets(); } catch (e) { continue; }
+
+            for (const w of anotaciones) {
+                try {
+                    const r = w.getRectangle();
+                    widgets.push({
+                        field,
+                        nombre: field.getName(),
+                        pagina: paginas.findIndex(p => p.ref === w.P()),
+                        x: r.x,
+                        y: r.y
+                    });
+                } catch (e) {}
+            }
+        }
+
+        widgets.sort((a, b) => a.pagina - b.pagina || b.y - a.y || a.x - b.x);
+
+        // 8pt de tolerancia: la separacion entre filas es de ~18pt y algunas
+        // celdas de la misma fila estan desalineadas hasta 5pt.
+        const filas = [];
+        let actual = null;
+        for (const w of widgets) {
+            if (!actual || w.pagina !== actual.pagina || Math.abs(w.y - actual.y) > 8) {
+                actual = { pagina: w.pagina, y: w.y, widgets: [] };
+                filas.push(actual);
+            }
+            actual.widgets.push(w);
+        }
+
+        // Un campo compartido por dos filas (mismo AcroField con dos widgets)
+        // solo se puede usar una vez: escribirlo dos veces sobreescribiria la
+        // fila anterior. Se queda con la primera y la segunda va sin ese dato.
+        const yaUsados = new Set();
+        const tomar = (fila, prefijo) => {
+            const w = fila.widgets.find(v => v.nombre.startsWith(prefijo));
+            if (!w) return null;
+            if (yaUsados.has(w.nombre)) return null;
+            yaUsados.add(w.nombre);
+            return w.field;
+        };
+
+        const mapeadas = filas.map(fila => ({
+            y: fila.y,
+            pagina: fila.pagina,
+            alto: fila.widgets[0] ? this._altoWidget(fila.widgets[0]) : 16.8,
+            in: tomar(fila, 'INRow'),
+            out: tomar(fila, 'OUTRow'),
+            desc: tomar(fila, 'MISSION'),
+            remark: tomar(fila, 'REMARKS')
+        }));
+
+        this.completarCeldasFaltantes(pdfDoc, mapeadas, widgets);
+        return mapeadas;
+    }
+
+    _altoWidget(w) {
+        try { return w.field.acroField.getWidgets()[0].getRectangle().height; } catch (e) { return 16.8; }
+    }
+
+    /**
+     * Crea los campos que la plantilla dibuja pero no define.
+     *
+     * La hoja de continuacion de patrol_log.pdf imprime las columnas OUT y
+     * REMARKS, pero solo trae widgets para algunas: 26 de sus 39 filas no
+     * tienen donde escribir la hora de salida y ninguna tiene observaciones.
+     * Sin esto, esos datos se descartan aunque el impreso tenga la casilla.
+     *
+     * La posicion no se inventa: se toma de las columnas ya existentes, que
+     * comparten x y ancho en las dos paginas.
+     */
+    completarCeldasFaltantes(pdfDoc, filas, widgets) {
+        const form = pdfDoc.getForm();
+
+        // Geometria de cada columna a partir de los widgets que si existen
+        const columna = (prefijo) => {
+            const propios = widgets.filter(w => w.nombre.startsWith(prefijo));
+            if (!propios.length) return null;
+
+            const moda = (valores) => {
+                const cuenta = new Map();
+                for (const v of valores) {
+                    const k = v.toFixed(1);
+                    cuenta.set(k, (cuenta.get(k) || 0) + 1);
+                }
+                return +[...cuenta.entries()].sort((a, b) => b[1] - a[1])[0][0];
+            };
+
+            const rects = propios.map(w => {
+                try { return w.field.acroField.getWidgets()[0].getRectangle(); } catch (e) { return null; }
+            }).filter(Boolean);
+            if (!rects.length) return null;
+
+            return { x: moda(rects.map(r => r.x)), width: moda(rects.map(r => r.width)) };
+        };
+
+        const colOut = columna('OUTRow');
+        const colRemark = columna('REMARKS');
+        if (!colOut && !colRemark) return;
+
+        // Cuerpo de letra de la columna, para que las celdas nuevas no
+        // desentonen con las que ya trae la plantilla
+        const tamano = (prefijo, porDefecto) => {
+            const w = widgets.find(v => v.nombre.startsWith(prefijo));
+            if (!w) return porDefecto;
+            try {
+                const da = String(w.field.acroField.dict.get(this.PDFLib.PDFName.of('DA')) || '');
+                const m = da.match(/([\d.]+)\s+Tf/);
+                if (m && +m[1] > 0) return +m[1];
+            } catch (e) {}
+            return porDefecto;
+        };
+
+        const tamOut = tamano('OUTRow', 14);
+        const tamRemark = tamano('REMARKS', 14);
+
+        let creados = 0;
+        const crear = (fila, clave, col, tam, prefijoNombre, indice) => {
+            if (fila[clave] || !col) return;
+            const pagina = pdfDoc.getPage(fila.pagina < 0 ? 0 : fila.pagina);
+            try {
+                const campo = form.createTextField(`${prefijoNombre}_auto${indice}`);
+                campo.addToPage(pagina, {
+                    x: col.x,
+                    y: fila.y,
+                    width: col.width,
+                    height: fila.alto,
+                    borderWidth: 0
+                });
+                try { campo.setFontSize(tam); } catch (e) {}
+                // Sin marco: la celda ya esta dibujada en la plantilla
+                try {
+                    for (const w of campo.acroField.getWidgets()) {
+                        w.dict.delete(this.PDFLib.PDFName.of('MK'));
+                    }
+                } catch (e) {}
+                fila[clave] = campo;
+                creados++;
+            } catch (e) {
+                this.debug('WARN', { action: 'No se pudo crear la celda', clave, error: e.message });
+            }
+        };
+
+        filas.forEach((fila, i) => {
+            // Solo filas de la tabla de misiones (las que tienen hora de entrada)
+            if (!fila.in) return;
+            crear(fila, 'out', colOut, tamOut, 'OUTRow', i + 1);
+            crear(fila, 'remark', colRemark, tamRemark, 'REMARKS Disposition', i + 1);
+        });
+
+        if (creados) {
+            this.debug('SUCCESS', {
+                action: 'Celdas ausentes en la plantilla completadas',
+                creadas: creados
+            });
+        }
     }
 
     // ============================================
