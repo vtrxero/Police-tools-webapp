@@ -76,7 +76,7 @@ jobs:
         run: |
           A=android/app/src/main/assets/public
           for f in index.html js/app.js js/lock.js js/pdf-generator.js \
-                   js/file-out.js js/pdf-view.js \
+                   js/file-out.js js/pdf-view.js js/prefill.js \
                    css/styles.css vendor/pdf-lib.min.js \
                    vendor/pdf.min.mjs vendor/pdf.worker.min.mjs \
                    vendor/pdfjs-fonts/LiberationSans-Regular.ttf \
@@ -108,7 +108,7 @@ jobs:
             exit 1
           fi
           echo "PT_VERSION_CODE=$N" >> $GITHUB_ENV
-          echo "PT_VERSION_NAME=2.1.$N" >> $GITHUB_ENV
+          echo "PT_VERSION_NAME=2.2.$N" >> $GITHUB_ENV
 
       - name: Compilar debug
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
