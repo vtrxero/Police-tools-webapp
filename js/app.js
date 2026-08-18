@@ -3362,8 +3362,7 @@ class PoliceToolsApp {
             menuPanama.addEventListener('click', () => {
                 document.getElementById('menu-dropdown')?.classList.remove('active');
                 this.openTab('panama');
-                this.renderPanamaCalendar();
-                this.updatePanamaTodayStatus();
+                this.refrescarPanama();
             });
         }
         
@@ -3435,11 +3434,7 @@ class PoliceToolsApp {
                 }
 
                 this.savePanamaConfig(config);
-                this.renderPanamaCalendar();
-                this.updatePanamaTodayStatus();
-                this.updateMainMenuPanamaBadge();
-                this.renderCalendar();
-                document.dispatchEvent(new CustomEvent('shiftschanged'));
+                this.refrescarPanama();
                 this.showToast('Panama Schedule saved!', 'success');
             });
         }
@@ -3538,8 +3533,7 @@ class PoliceToolsApp {
         this.panamaConfig.customPattern = this.currentEditPattern;
         this.savePanamaConfig(this.panamaConfig);
         this.hidePatternEditor();
-        this.renderPanamaCalendar();
-        this.updatePanamaTodayStatus();
+        this.refrescarPanama();
         this.showToast('Custom pattern saved!', 'success');
     }
     
@@ -3600,11 +3594,7 @@ class PoliceToolsApp {
         this.cuadrandoPanama = false;
         this.marcasPanama = {};
 
-        this.renderPanamaCalendar();
-        this.renderCuadrePanama();
-        this.renderPanamaToday?.();
-        this.renderCalendar?.();
-        document.dispatchEvent(new CustomEvent('shiftschanged'));
+        this.refrescarPanama();
 
         this.showToast(
             mejor.aciertos === mejor.total
@@ -3651,8 +3641,28 @@ class PoliceToolsApp {
         const largo = (this.panamaConfig.customPattern || PoliceToolsApp.PATRON_PANAMA).length || 14;
         this.panamaConfig.phase = ((((Number(this.panamaConfig.phase) || 0) + dias) % largo) + largo) % largo;
         this.savePanamaConfig(this.panamaConfig);
+        this.refrescarPanama();
+    }
+
+    /**
+     * Todo lo que depende de la fase, en un solo sitio.
+     *
+     * Estaba repartido y a medias: cuadrar el horario o correrlo un dia
+     * repintaba el calendario pero no "Today's Status" ni "Next shift", que
+     * seguian contestando con la fase anterior. De ahi que el calendario
+     * dijera que el proximo turno era el miercoles y el panel de abajo
+     * dijera martes —el descuadre no estaba en el patron, sino en que media
+     * pantalla no se habia enterado del cambio.
+     *
+     * La llamada era `this.renderPanamaToday?.()`, y ese metodo no existe:
+     * el ?. se tragaba la falta sin decir nada. Aqui va el nombre real.
+     */
+    refrescarPanama() {
         this.renderPanamaCalendar();
-        this.renderCalendar?.();
+        this.renderCuadrePanama();
+        this.updatePanamaTodayStatus();
+        this.updateMainMenuPanamaBadge();
+        this.renderCalendar();
         document.dispatchEvent(new CustomEvent('shiftschanged'));
     }
 
@@ -3743,11 +3753,29 @@ class PoliceToolsApp {
         const startStatus = this.panamaConfig.startStatus || 'off';
         // Empezar en ON es la rotacion de la otra dotacion, que es el mismo
         // 2-2-3 desplazado, no un patron distinto.
-        const isOn = startStatus === 'off' ? pattern[cyclePosition] : !pattern[cyclePosition];
+        const enPos = (pos) => {
+            const p = (((pos % largo) + largo) % largo);
+            return startStatus === 'off' ? pattern[p] : !pattern[p];
+        };
 
-        if (!isOn) return { type: 'off', shift: null };
+        if (!enPos(cyclePosition)) return { type: 'off', shift: null };
 
-        return { type: 'on', shift: this.turnoPanamaDe(targetDate) };
+        /*
+         * El turno lo decide el primer dia del bloque, no cada dia por su
+         * cuenta.
+         *
+         * La rotacion cambia al entrar en un mes nuevo, y un bloque de tres
+         * dias puede cruzar el 1: el calendario pintaba el 31 de noche y el 1
+         * y el 2 de dia, partiendo en dos colores un bloque que se trabaja
+         * seguido. Nadie cambia de noche a dia a mitad de tanda.
+         */
+        let atras = 0;
+        while (atras < largo && enPos(cyclePosition - atras - 1)) atras++;
+
+        const inicioBloque = new Date(targetDate);
+        inicioBloque.setDate(inicioBloque.getDate() - atras);
+
+        return { type: 'on', shift: this.turnoPanamaDe(inicioBloque) };
     }
 
     /**
@@ -3850,8 +3878,12 @@ class PoliceToolsApp {
             html += this.renderCalendarDay(day, shift, false, isToday, iso);
         }
 
-        // Next month days (to fill the grid)
-        const remainingCells = 42 - (firstDay + daysInMonth); // 6 rows x 7 cols = 42
+        // Solo lo justo para cerrar la ultima semana. Rellenar siempre hasta
+        // 42 casillas añadia una fila entera del mes siguiente en los meses
+        // que caben en cinco, y esa fila de mas es la que hacia que el
+        // calendario pareciera descuadrado.
+        const usadas = firstDay + daysInMonth;
+        const remainingCells = (7 - (usadas % 7)) % 7;
         for (let day = 1; day <= remainingCells; day++) {
             const date = new Date(year, month + 1, day);
             const shift = this.getPanamaShiftForDate(date);

@@ -1817,15 +1817,20 @@ body {
 }
 
 /* Turno segun el patron: el color de fondo dice de un vistazo como viene el
-   mes. Atenuado, porque son 30 celdas y a plena saturacion marea. */
+   mes.
+   Va al mismo azul y morado que el calendario de Panama, a proposito. Aqui
+   estaban al 22% de opacidad para que 30 celdas no marearan, pero eso los
+   dejaba casi del color del fondo: habia que fijarse para saber si un dia se
+   trabajaba, y peor aun, no se parecian a los del otro calendario. Los dos
+   contestan la misma pregunta, asi que responden con el mismo color. */
 #calendar-view .calendar-day.on-day {
-    background: rgba(59, 130, 246, 0.22);
-    color: var(--text-primary);
+    background: var(--accent-blue);
+    color: #fff;
 }
 
 #calendar-view .calendar-day.on-night {
-    background: rgba(139, 92, 246, 0.22);
-    color: var(--text-primary);
+    background: var(--accent-purple);
+    color: #fff;
 }
 
 #calendar-view .calendar-day.off {
@@ -1841,9 +1846,10 @@ body {
 }
 
 /* Hoy: aro, no relleno. Rellenar tapaba el color del turno, que es el dato
-   que se viene a mirar. */
+   que se viene a mirar. El aro va en blanco y no en azul porque sobre una
+   celda de dia —ahora azul entera— un aro azul no se veria. */
 #calendar-view .calendar-day.today {
-    border-color: var(--accent-blue);
+    border-color: var(--text-primary);
     font-weight: 800;
 }
 
@@ -2101,7 +2107,15 @@ body {
 }
 
 /* Toggle Switch */
-.toggle {
+/* El selector lleva .form-group delante a proposito.
+   El interruptor es un <label>, y dentro de un .form-group le caia encima
+   `.form-group label { display: block }`, que gana por especificidad: dejaba
+   de ser contenedor flex, el carril de 52px se quedaba en los 4px de sus
+   bordes y la bolita —posicionada sobre el carril— salia disparada al borde
+   de la pantalla. Solo se notaba en el interruptor de Panama, que es el
+   unico que vive dentro de un .form-group. */
+.toggle,
+.form-group label.toggle {
     display: inline-flex;
     align-items: center;
     cursor: pointer;
@@ -2112,6 +2126,10 @@ body {
 }
 
 .toggle-slider {
+    /* display explicito: si algun dia el padre deja de ser flex, un span en
+       linea ignora el ancho y el carril vuelve a desaparecer. */
+    display: block;
+    flex-shrink: 0;
     width: 52px;
     height: 28px;
     background: var(--bg-primary);
@@ -3714,10 +3732,24 @@ body {
     font-size: 15px;
 }
 
+/* El interruptor no se encoge; el texto si.
+   Sin esto, un rotulo largo apretaba el carril de 52px hasta dejarlo en una
+   raya y la bolita —que va posicionada sobre el carril— se quedaba fuera,
+   flotando en el borde de la pantalla. Encogia el elemento equivocado. */
 .toggle-label {
     display: flex !important;
     justify-content: space-between;
     align-items: center;
+    gap: 14px;
+}
+
+.toggle-label > span {
+    min-width: 0;
+}
+
+.toggle-label .toggle,
+.toggle-label .toggle-slider {
+    flex-shrink: 0;
 }
 
 .help-text {
