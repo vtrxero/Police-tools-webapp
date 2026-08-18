@@ -1396,6 +1396,30 @@ class PoliceToolsApp {
         return date;
     }
 
+    /**
+     * Que campos distinguen dos documentos del mismo tipo y el mismo dia.
+     *
+     * Dos entrevistas del mismo dia son a dos personas; dos PMCS, a dos
+     * vehiculos. En cambio el Patrol Log y el Guard Mount son uno por
+     * patrulla y turno. Sin esta tabla, "mismo tipo y misma fecha" bastaria
+     * para pisar documentos que no tienen nada que ver.
+     */
+    static get IDENTIDAD_DOCUMENTO() {
+        return {
+            interview: ['last_name', 'first_name'],
+            pmcs: ['vehicle_type', 'unit'],
+            patrol: ['patrol', 'mid'],
+            guardmount: ['hours']
+        };
+    }
+
+    identidadDocumento(type, payload = {}) {
+        const campos = PoliceToolsApp.IDENTIDAD_DOCUMENTO[type] || [];
+        return campos
+            .map(c => String(payload[c] ?? '').trim().toLowerCase())
+            .join('|');
+    }
+
     async saveDailyReport(type, pdfDoc, filename, options = {}) {
         try {
             // Generate unique ID for each form
@@ -1452,7 +1476,36 @@ class PoliceToolsApp {
                 formData: payload
             };
 
-            await window.PoliceToolsStore.guardar(uniqueId, blob);
+            /*
+             * Un documento que ya existe se reemplaza, no se añade.
+             *
+             * Durante el turno el mismo parte se genera varias veces —se ve
+             * la previa, se descarga, se comparte, se corrige un dato y se
+             * vuelve a generar—, y cada pasada dejaba una ficha nueva. La
+             * lista acababa con seis copias del mismo Patrol Log y el
+             * resumen del mes contando seis documentos.
+             *
+             * "Ya existe" es tipo + fecha + identidad, y la identidad la pone
+             * cada formulario (ver IDENTIDAD_DOCUMENTO). Sin ella, dos PMCS
+             * del mismo dia para dos vehiculos distintos se habrian pisado
+             * uno al otro: seria perder un documento, que es peor que
+             * duplicarlo.
+             */
+            const identidad = this.identidadDocumento(type, payload);
+            const iguales = (r) => r.type === type
+                && r.documentDate === formDate
+                && this.identidadDocumento(r.type, r.formData || {}) === identidad;
+
+            const previo = this.dailyReports.findIndex(iguales);
+
+            if (previo !== -1) {
+                const viejo = this.dailyReports[previo];
+                report.id = viejo.id;
+                report.date = viejo.date;          // se conserva cuando se creo
+                this.dailyReports.splice(previo, 1);
+            }
+
+            await window.PoliceToolsStore.guardar(report.id, blob);
 
             this.dailyReports.unshift(report);
             
@@ -1469,7 +1522,9 @@ class PoliceToolsApp {
             // guardar un documento no se enteraba ninguno.
             document.dispatchEvent(new CustomEvent('reportschanged'));
 
-            this.showToast('Report saved to Daily Reports!', 'success');
+            if (!options.silencioso) {
+                this.showToast('Report saved to Daily Reports!', 'success');
+            }
             return { success: true, report };
         } catch (e) {
             console.error('Error saving daily report:', e);
@@ -2033,7 +2088,7 @@ class PoliceToolsApp {
 
         try {
             const res = await window.PTOut.descargar([{ blob, nombre: report.filename }]);
-            this.showToast(`Saved to ${res.donde}`, 'success');
+            this.showToast(`Saved to ${res.donde} · and in Daily Reports`, 'success');
         } catch (error) {
             console.error('Download error:', error);
             this.showToast('Error downloading PDF', 'error');
@@ -2100,7 +2155,57 @@ class PoliceToolsApp {
         } catch (e) { /* sin historial disponible, la capa se cierra con su boton */ }
     }
 
+    /**
+     * El boton fisico de Android, atendido por el plugin App.
+     *
+     * El historial del navegador no bastaba. Dentro del APK la app corre en
+     * un WebView, y quien recibe la pulsacion es la Activity de Android, no
+     * el documento: si nadie escucha el evento del plugin, Capacitor decide
+     * por su cuenta y termina cerrando la app. Por eso el back seguia
+     * saliendose aunque hubiera un modal abierto o se estuviera dentro de una
+     * pestaña — el popstate ni siquiera llegaba a dispararse.
+     *
+     * Con el listener puesto, el orden lo decide la app:
+     *   1. cerrar lo que este encima (modal, hoja, buscador…)
+     *   2. si no, volver al menu principal desde la pestaña abierta
+     *   3. y solo en el menu principal, salir
+     *
+     * En el navegador esto no existe y manda initHistoryAPI, que sigue igual.
+     */
+    initBotonAtras() {
+        const cap = window.Capacitor;
+        if (!cap?.isNativePlatform?.()) return;
+
+        let App = cap.Plugins?.App;
+        if (!App && typeof cap.registerPlugin === 'function') {
+            try { App = cap.registerPlugin('App'); } catch (e) { App = null; }
+        }
+        if (!App?.addListener) return;
+
+        App.addListener('backButton', () => {
+            if (this.cerrarCapaSuperior()) return;
+
+            if (this.currentTab) {
+                this.closeCurrentTab();
+                window.PoliceToolsNav?.sincronizar?.();
+                return;
+            }
+
+            // Ya en el menu principal. Se pide confirmacion con un segundo
+            // toque para no cerrar la app por un roce sin querer.
+            if (this.saliendo) {
+                App.exitApp?.();
+                return;
+            }
+            this.saliendo = true;
+            this.showToast('Press back again to exit', 'info');
+            setTimeout(() => { this.saliendo = false; }, 2000);
+        });
+    }
+
     initHistoryAPI() {
+        this.initBotonAtras();
+
         // Manejar evento popstate (botón back físico)
         window.addEventListener('popstate', (event) => {
             const state = event.state;
@@ -2858,13 +2963,40 @@ class PoliceToolsApp {
         return new Date().toISOString().split('T')[0];
     }
 
+    /**
+     * Genera el documento y lo archiva en Daily Reports de una vez.
+     *
+     * Antes solo archivaba el boton "Save": ver la previa, descargar o
+     * compartir generaba el PDF y lo dejaba ir. El oficial que llenaba el
+     * parte y lo mandaba por correo no lo encontraba luego en la lista, y
+     * Daily Reports es la base de datos de la unidad. Ahora cualquiera de las
+     * cuatro salidas deja la ficha guardada; el reemplazo por tipo y fecha
+     * evita que se acumulen copias de la misma pasada.
+     */
+    async crearDocumento(type) {
+        const result = await this.generatePDF(type);
+        if (!result) return null;
+
+        const { pdfDoc, filename } = result;
+        const { blob } = await pdfGenerator.savePDF(pdfDoc, filename);
+
+        // Archivar no puede tumbar la accion que el oficial pidio: si falla
+        // el guardado, el PDF sigue estando para verlo o mandarlo.
+        try {
+            await this.saveDailyReport(type, pdfDoc, filename, { silencioso: true });
+        } catch (e) {
+            console.error('No se pudo archivar el documento:', e);
+        }
+
+        return { pdfDoc, filename, blob };
+    }
+
     async previewPDF(type) {
         try {
-            const result = await this.generatePDF(type);
-            if (!result) return;
+            const doc = await this.crearDocumento(type);
+            if (!doc) return;
 
-            const { pdfDoc, filename } = result;
-            const { blob } = await pdfGenerator.savePDF(pdfDoc, filename);
+            const { pdfDoc, filename, blob } = doc;
 
             await this.mostrarPrevia(blob, filename, pdfDoc);
 
@@ -2876,14 +3008,15 @@ class PoliceToolsApp {
 
     async sharePDF(type) {
         try {
-            const result = await this.generatePDF(type);
-            if (!result) return;
+            const doc = await this.crearDocumento(type);
+            if (!doc) return;
 
-            const { pdfDoc, filename } = result;
-            const { blob } = await pdfGenerator.savePDF(pdfDoc, filename);
+            const { filename, blob } = doc;
 
             const res = await window.PTOut.compartir([{ blob, nombre: filename }], { asunto: filename });
-            this.showToast(res.via === 'descarga' ? 'PDF downloaded' : 'PDF shared', 'success');
+            this.showToast(res.via === 'descarga'
+                ? 'PDF downloaded · saved in Daily Reports'
+                : 'PDF shared · saved in Daily Reports', 'success');
 
         } catch (error) {
             if (error && (error.name === 'AbortError' || /cancel/i.test(error.message || ''))) return;
@@ -2894,14 +3027,13 @@ class PoliceToolsApp {
 
     async downloadPDF(type) {
         try {
-            const result = await this.generatePDF(type);
-            if (!result) return;
+            const doc = await this.crearDocumento(type);
+            if (!doc) return;
 
-            const { pdfDoc, filename } = result;
-            const { blob } = await pdfGenerator.savePDF(pdfDoc, filename);
+            const { filename, blob } = doc;
 
             const res = await window.PTOut.descargar([{ blob, nombre: filename }]);
-            this.showToast(`Saved to ${res.donde}`, 'success');
+            this.showToast(`Saved to ${res.donde} · and in Daily Reports`, 'success');
 
         } catch (error) {
             console.error('Download error:', error);
@@ -2939,7 +3071,7 @@ class PoliceToolsApp {
         try {
             const { blob, filename } = this.currentPDF;
             const res = await window.PTOut.descargar([{ blob, nombre: filename }]);
-            this.showToast(`Saved to ${res.donde}`, 'success');
+            this.showToast(`Saved to ${res.donde} · and in Daily Reports`, 'success');
         } catch (error) {
             console.error('Download error:', error);
             this.showToast('Error downloading', 'error');
@@ -4243,7 +4375,7 @@ class PoliceToolsApp {
 
         try {
             const res = await window.PTOut.descargar([{ blob, nombre }]);
-            this.showToast(`Saved to ${res.donde}`, 'success');
+            this.showToast(`Saved to ${res.donde} · and in Daily Reports`, 'success');
         } catch (e) {
             console.error('Journal export error:', e);
             this.showToast('Error saving the document', 'error');

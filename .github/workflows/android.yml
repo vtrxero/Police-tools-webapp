@@ -85,7 +85,7 @@ jobs:
           done
           # Los plugins nativos tienen que haber entrado en el proyecto Gradle:
           # sin ellos descargar y compartir vuelven a no hacer nada.
-          for p in capacitor-filesystem capacitor-share; do
+          for p in capacitor-filesystem capacitor-share capacitor-app; do
             if ! grep -q "$p" android/capacitor.settings.gradle; then
               echo "FALTA el plugin: $p"; exit 1
             fi
