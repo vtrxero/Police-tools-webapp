@@ -14,6 +14,8 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
+import org.json.JSONException;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +113,7 @@ public class MailOut extends Plugin {
         }
     }
 
-    private String[] direcciones(JSArray lista) {
+    private String[] direcciones(JSArray lista) throws JSONException {
         List<String> fuera = new ArrayList<>();
         if (lista != null) {
             for (Object o : lista.toList()) {
