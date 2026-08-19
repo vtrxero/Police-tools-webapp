@@ -1992,11 +1992,15 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Auto-save Forms</label>
-                        <label class="toggle">
-                            <input type="checkbox" id="autosave-toggle" checked=""/>
-                            <span class="toggle-slider"></span>
+                        <label class="toggle-label">
+                            <span>Auto-save Forms</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="autosave-toggle" checked=""/>
+                                <span class="toggle-slider"></span>
+                            </label>
                         </label>
+                        <p class="help-text">Keeps what you type for 20 hours, so a
+                        half-filled report survives leaving the app.</p>
                     </div>
                 </div>
 
@@ -2343,6 +2347,7 @@
     <script src="js/home.js"></script>
     <script src="js/form-progress.js"></script>
     <script src="js/prefill.js"></script>
+    <script src="js/drafts.js"></script>
     <script src="js/photos.js"></script>
     <script src="js/citations.js"></script>
     <!-- Despues de home.js: usan turnoDeHoy para saber que turno toca -->

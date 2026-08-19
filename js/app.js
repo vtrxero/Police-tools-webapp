@@ -66,6 +66,11 @@ class PoliceToolsApp {
         // Render saved entries
         this.renderSavedMissions();
         this.renderSavedPersonnel();
+
+        // Los duplicados de antes de la regla no se van solos. Va despues del
+        // primer pintado y sin await para no retrasar el arranque: la lista
+        // sale ya y se corrige sola un instante despues.
+        this.depurarDuplicados().catch(e => console.warn('[app] depurar:', e.message));
     }
 
     /* ============================================
@@ -1346,6 +1351,49 @@ class PoliceToolsApp {
         }
     }
 
+    /**
+     * Deja un solo documento por tipo y fecha, el mas reciente.
+     *
+     * La regla se aplica ya al guardar, pero los duplicados creados antes de
+     * que existiera siguen en el telefono, y no se van a ir solos. Se limpian
+     * al arrancar: se conserva el ultimo de cada dia, que es el que lleva las
+     * correcciones, y los PDFs de los demas se borran de IndexedDB —si no,
+     * ocuparian sitio para siempre sin ninguna ficha que los nombre.
+     */
+    async depurarDuplicados() {
+        const vistos = new Set();
+        const sobran = [];
+        const quedan = [];
+
+        // dailyReports viene con el mas reciente primero, asi que el primero
+        // de cada clave es el bueno.
+        for (const r of this.dailyReports) {
+            const clave = [
+                r.type,
+                r.documentDate || (r.date || '').split('T')[0],
+                this.identidadDocumento(r.type, r.formData || {})
+            ].join('|');
+
+            if (vistos.has(clave)) sobran.push(r);
+            else { vistos.add(clave); quedan.push(r); }
+        }
+
+        if (!sobran.length) return 0;
+
+        this.dailyReports = quedan;
+        localStorage.setItem('policeToolsDailyReports', JSON.stringify(this.dailyReports));
+
+        for (const r of sobran) {
+            try { await window.PoliceToolsStore?.borrar(r.id); } catch (e) {}
+        }
+
+        this.renderDailyReports();
+        document.dispatchEvent(new CustomEvent('reportschanged'));
+
+        console.log(`[app] ${sobran.length} documento(s) duplicado(s) unificado(s)`);
+        return sobran.length;
+    }
+
     // Tipos que tienen límite de 1 por día
     getLimitedTypes() {
         return ['pmcs', 'patrol', 'guardmount'];
@@ -1406,10 +1454,14 @@ class PoliceToolsApp {
      */
     static get IDENTIDAD_DOCUMENTO() {
         return {
+            // La entrevista es la excepcion, y por una razon concreta: dos
+            // entrevistas del mismo dia son a dos personas distintas, y
+            // reemplazar una por otra seria perder la declaracion de un
+            // testigo. Las demas son partes del turno: uno por dia.
             interview: ['last_name', 'first_name'],
-            pmcs: ['vehicle_type', 'unit'],
-            patrol: ['patrol', 'mid'],
-            guardmount: ['hours']
+            pmcs: [],
+            patrol: [],
+            guardmount: []
         };
     }
 
@@ -1549,6 +1601,10 @@ class PoliceToolsApp {
     createNewForm(type) {
         // Clear the current form
         this.clearForm(type);
+
+        // Y el borrador con el: pedir un formulario nuevo y que al volver
+        // reapareciera lo de antes seria justo lo contrario de lo pedido.
+        window.PoliceToolsDrafts?.borrar(type);
         
         // Reset editing state
         this.editingEntry = { type: null, index: null };
