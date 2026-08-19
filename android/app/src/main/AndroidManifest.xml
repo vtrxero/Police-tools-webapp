@@ -39,6 +39,17 @@
         </provider>
     </application>
 
+    <!-- Android 11 en adelante esconde las aplicaciones instaladas salvo que
+         se declaren aqui. Sin esto, el intent de correo con selector mailto:
+         no encuentra a quien enviarselo y el envio con destinatario cae al
+         selector generico. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />

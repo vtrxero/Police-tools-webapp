@@ -282,7 +282,55 @@
         }
     }
 
+    /**
+     * Escribe los documentos donde otra aplicacion pueda leerlos y devuelve
+     * sus URIs. Es lo que necesita el correo nativo, que monta su propio
+     * intent en vez de pasar por el selector de Capacitor.
+     *
+     * Cache porque el fichero solo tiene que vivir lo que dure el envio.
+     */
+    async function urisParaAdjuntar(items) {
+        const lista = [].concat(items).filter(x => x && x.blob);
+        const uris = [];
+        for (const it of lista) {
+            uris.push(await escribir(it.blob, it.nombre, 'CACHE'));
+        }
+        return uris;
+    }
+
+    /**
+     * Correo con destinatario Y con adjuntos.
+     *
+     * Ni el plugin Share ni mailto: hacen las dos cosas: Share adjunta pero no
+     * sabe a quien, y mailto: sabe a quien pero no adjunta. De ahi el plugin
+     * nativo propio (android/.../MailOut.java). Devuelve null si no esta
+     * disponible, para que quien llame se quede con el camino de siempre.
+     */
+    async function correo(items, { para = [], cc = [], asunto = '', cuerpo = '' } = {}) {
+        if (!esNativo()) return null;
+
+        const MailOut = plugin('MailOut');
+        if (!MailOut?.send) return null;
+
+        const files = await urisParaAdjuntar(items);
+        if (!files.length) return null;
+
+        return await MailOut.send({
+            to: [].concat(para).filter(Boolean),
+            cc: [].concat(cc).filter(Boolean),
+            subject: asunto,
+            body: cuerpo,
+            files
+        });
+    }
+
+    /** true si el correo puede salir ya con el destinatario puesto. */
+    function puedeDirigirCorreo() {
+        return esNativo() && !!plugin('MailOut')?.send;
+    }
+
     window.PTOut = {
-        esNativo, puedeAdjuntar, descargar, compartir, limpiarNombre, guardarEnDocumentos, CARPETA
+        esNativo, puedeAdjuntar, puedeDirigirCorreo, descargar, compartir, correo,
+        limpiarNombre, guardarEnDocumentos, CARPETA
     };
 })();

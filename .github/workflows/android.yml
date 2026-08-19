@@ -90,6 +90,14 @@ jobs:
               echo "FALTA el plugin: $p"; exit 1
             fi
           done
+          # El plugin propio del correo tiene que estar registrado en la
+          # Activity: si se queda solo el .java, compila igual y en el
+          # telefono el correo sale otra vez sin destinatario.
+          J=android/app/src/main/java/mil/buchanan/policetools
+          if [ ! -f "$J/MailOut.java" ]; then echo "FALTA MailOut.java"; exit 1; fi
+          if ! grep -q "registerPlugin(MailOut.class)" "$J/MainActivity.java"; then
+            echo "MailOut no esta registrado en MainActivity"; exit 1
+          fi
           echo "Contenido verificado: $(find $A -type f | wc -l) archivos, $(du -sh $A | cut -f1)"
 
       # Numero de version monotono: el recuento de commits solo crece, asi

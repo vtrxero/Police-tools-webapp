@@ -49,6 +49,20 @@
         return await window.PTOut.descargar([{ blob, nombre }]);
     }
 
+    /**
+     * "a@x.mil, b@x.mil; c@x.mil" -> ["a@x.mil", "b@x.mil", "c@x.mil"]
+     *
+     * El intent de Android quiere un array; el campo de la hoja de envio es
+     * una sola linea, y ahi la gente separa con coma o con punto y coma
+     * indistintamente.
+     */
+    function listaDirecciones(texto) {
+        return String(texto || '')
+            .split(/[,;\s]+/)
+            .map(x => x.trim())
+            .filter(Boolean);
+    }
+
     function fechaArchivo() {
         return new Date().toISOString().split('T')[0];
     }
@@ -381,9 +395,38 @@
             const asunto = this.asunto(reportes);
             const items = ficheros.map(f => ({ blob: f, nombre: f.name }));
 
-            // 1. Compartir con ficheros: es la unica via que los adjunta de
-            //    verdad. En el APK la hace el plugin Share de Capacitor y en
-            //    el navegador la Web Share API.
+            // 1. Correo nativo: el unico camino que lleva el destinatario
+            //    puesto y los PDFs adjuntos a la vez.
+            //
+            //    El plugin Share de Capacitor no tiene destinatario, asi que
+            //    el correo se abria con los adjuntos y el campo Para en
+            //    blanco por mucho que en Ajustes hubiera una direccion
+            //    guardada: no tenia por donde llegar. Y mailto:, que si lleva
+            //    destinatario, no admite adjuntos.
+            if (window.PTOut.puedeDirigirCorreo?.()) {
+                try {
+                    const r = await window.PTOut.correo(items, {
+                        para: listaDirecciones(para),
+                        cc: listaDirecciones(cc),
+                        asunto,
+                        cuerpo: this.cuerpo(reportes, false)
+                    });
+                    if (r) {
+                        app()?.showToast(
+                            r.via === 'correo'
+                                ? `${ficheros.length} document(s) ready to send`
+                                : `${ficheros.length} document(s) attached`,
+                            'success');
+                        return { metodo: 'correo', via: r.via };
+                    }
+                } catch (e) {
+                    console.warn('[data-io] correo nativo fallo, se comparte:', e.message);
+                }
+            }
+
+            // 2. Compartir con ficheros: adjunta de verdad, pero sin
+            //    destinatario. En el APK lo hace el plugin Share de Capacitor
+            //    y en el navegador la Web Share API.
             if (window.PTOut.puedeAdjuntar(items.length)) {
                 try {
                     await window.PTOut.compartir(items, {
@@ -401,7 +444,7 @@
                 }
             }
 
-            // 2. ZIP + borrador de correo
+            // 3. ZIP + borrador de correo
             await this.porMailto(reportes, ficheros, asunto, para, cc);
             return { metodo: 'mailto' };
         },
