@@ -22,7 +22,19 @@
     // ============================================
     // UTILIDADES
     // ============================================
+    /**
+     * El dia del turno, no el del reloj.
+     *
+     * En turno de noche —de 1730 a 0630— a las dos de la manana el reloj ya
+     * dice el dia siguiente, pero el parte que se esta llenando sigue siendo
+     * el del dia anterior. Fechando por el reloj, al cruzar la medianoche la
+     * app proponia otra fecha y el turno acababa partido en dos partes: uno
+     * por la tarde y otro por la madrugada.
+     */
     function hoyISO() {
+        const dia = home()?.diaDeTrabajo?.();
+        if (dia) return dia;
+
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
@@ -68,7 +80,10 @@
      * campos de hora de turno, solo las casillas DAYS / SWINGS / MID.
      */
     function datosDelTurno() {
-        const turno = home()?.turnoDeHoy?.();
+        // turnoEnCurso y no turnoDeHoy: a las tres de la manana el de hoy
+        // puede ser "libre" estando de servicio, porque el turno es el que
+        // entro ayer a las 1730.
+        const turno = home()?.turnoEnCurso?.() || home()?.turnoDeHoy?.();
         if (!turno || turno.clave === 'off') return null;
 
         // El Patrol Log solo tiene DAYS / SWINGS / MID. Los dos turnos de 12

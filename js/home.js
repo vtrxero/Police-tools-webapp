@@ -81,6 +81,56 @@
         return turnoDeFecha(new Date());
     }
 
+    function iso(f) {
+        return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${
+            String(f.getDate()).padStart(2, '0')}`;
+    }
+
+    /**
+     * El dia de trabajo, que no siempre es el dia del calendario.
+     *
+     * El turno de noche entra a las 1730 y sale a las 0630 del dia siguiente,
+     * asi que a las dos de la madrugada el reloj dice 20 de agosto pero el
+     * turno que se esta trabajando es el del 19. Todo lo que la app fecha
+     * sola —la fecha que propone en el parte, el aviso del PMCS, el turno que
+     * enseña el inicio— miraba el reloj sin mas.
+     *
+     * Eso rompia dos cosas a la vez en un turno de noche:
+     *
+     *   - Al pasar la medianoche, el parte del turno cambiaba de dia. Como
+     *     solo hay un Patrol Log por fecha, el turno acababa partido en dos
+     *     documentos: el que se empezo a las 1730 y otro por lo que quedaba.
+     *   - El calendario podia decir "libre" a las tres de la manana estando
+     *     de servicio, porque miraba el 20 y el turno era del 19.
+     *
+     * Antes de la hora de salida, el dia de trabajo sigue siendo el de ayer,
+     * siempre que ayer tocara turno de noche. En turno de dia o libre, el dia
+     * de trabajo es el del calendario.
+     */
+    function diaDeTrabajo(momento = new Date()) {
+        const min = momento.getHours() * 60 + momento.getMinutes();
+
+        const ayer = new Date(momento);
+        ayer.setDate(ayer.getDate() - 1);
+
+        const turnoDeAyer = turnoDeFecha(ayer);
+        const cruzaMedianoche = turnoDeAyer
+            && turnoDeAyer.ini !== undefined
+            && turnoDeAyer.fin !== undefined
+            && turnoDeAyer.fin <= turnoDeAyer.ini;
+
+        if (cruzaMedianoche && min < turnoDeAyer.fin) return iso(ayer);
+
+        return iso(momento);
+    }
+
+    /** El turno que se esta trabajando ahora, contando la noche que sigue. */
+    function turnoEnCurso(momento = new Date()) {
+        const dia = diaDeTrabajo(momento);
+        const [y, m, d] = dia.split('-').map(Number);
+        return turnoDeFecha(new Date(y, m - 1, d));
+    }
+
     /** Progreso del turno actual: 0 a 1, o null si no esta en curso. */
     function progresoTurno(turno) {
         if (!turno || turno.clave === 'off' || turno.ini === undefined) return null;
@@ -387,6 +437,7 @@
     }
 
     window.PoliceToolsHome = {
-        render, turnoDeHoy, turnoDeFecha, progresoTurno, HORARIOS, PANAMA, HORAS_OVERTIME
+        render, turnoDeHoy, turnoDeFecha, diaDeTrabajo, turnoEnCurso,
+        progresoTurno, HORARIOS, PANAMA, HORAS_OVERTIME
     };
 })();

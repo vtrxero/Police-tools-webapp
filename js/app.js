@@ -1432,7 +1432,17 @@ class PoliceToolsApp {
         // Intentar obtener la fecha del formulario
         let date = formData.date || formData.Date;
         
-        // Si no hay fecha en el formulario, usar la fecha actual local
+        // Sin fecha en el formulario, la del turno que se esta trabajando.
+        //
+        // No la del reloj: el turno de noche sale a las 0630 del dia
+        // siguiente, asi que un parte cerrado a las seis de la manana se
+        // habria fechado el dia de despues del que se trabajo — y como solo
+        // hay un documento por fecha, habria quedado como un segundo parte
+        // en vez de como el mismo.
+        if (!date) {
+            date = window.PoliceToolsHome?.diaDeTrabajo?.();
+        }
+
         if (!date) {
             const now = new Date();
             const year = now.getFullYear();
