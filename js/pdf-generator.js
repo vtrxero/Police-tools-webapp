@@ -1295,27 +1295,142 @@ class PDFGenerator {
      * mal el texto de los campos que la app crea (se veia el valor de un campo
      * encima del de al lado). Con las /AP ya generadas no hace ninguna falta.
      */
+    /**
+     * Deja /Helv y /ZaDb declaradas en el /DR del AcroForm y devuelve Helv.
+     *
+     * El /DR es el catalogo de recursos del formulario: lo que un campo puede
+     * nombrar en su /DA. Una fuente que no este ahi es una referencia rota,
+     * aunque el nombre suene a fuente conocida.
+     *
+     * embedStandardFont y no embedFont: la version sincrona, porque
+     * ensureFillable se llama desde sitios que no esperan una promesa. Las
+     * catorce fuentes estandar del PDF no necesitan incrustar nada.
+     */
+    declararFuentes(pdfDoc) {
+        const { PDFName, PDFDict, PDFString, StandardFonts } = this.PDFLib;
+
+        try {
+            const acroForm = pdfDoc.catalog.lookup(PDFName.of('AcroForm'), PDFDict);
+            if (!acroForm) return null;
+
+            let dr = acroForm.lookup(PDFName.of('DR'), PDFDict);
+            if (!dr) {
+                dr = pdfDoc.context.obj({});
+                acroForm.set(PDFName.of('DR'), dr);
+            }
+
+            let drFont = dr.lookup(PDFName.of('Font'), PDFDict);
+            if (!drFont) {
+                drFont = pdfDoc.context.obj({});
+                dr.set(PDFName.of('Font'), drFont);
+            }
+
+            const helv = pdfDoc.embedStandardFont(StandardFonts.Helvetica);
+            const zadb = pdfDoc.embedStandardFont(StandardFonts.ZapfDingbats);
+
+            drFont.set(PDFName.of('Helv'), helv.ref);
+            drFont.set(PDFName.of('ZaDb'), zadb.ref);
+
+            // El /DA del formulario es el que heredan los campos que no traen
+            // el suyo. Tambien tiene que nombrar algo declarado.
+            //
+            // PDFString y no context.obj: obj() ve la barra inicial y lo toma
+            // por un nombre PDF, asi que "/Helv 0 Tf 0 g" acababa escrito
+            // como el nombre /#2FHelv#200#20Tf#200#20g. El /DA es una cadena.
+            acroForm.set(PDFName.of('DA'), PDFString.of('/Helv 0 Tf 0 g'));
+
+            return helv;
+        } catch (e) {
+            this.debug('WARN', { action: 'No se pudieron declarar las fuentes', error: e.message });
+            return null;
+        }
+    }
+
+    /** Reescribe los /DA que nombren una fuente que no existe en el /DR. */
+    sanearFuentes(pdfDoc, form) {
+        const { PDFName, PDFDict, PDFString } = this.PDFLib;
+
+        let arreglados = 0;
+        try {
+            const acroForm = pdfDoc.catalog.lookup(PDFName.of('AcroForm'), PDFDict);
+            const drFont = acroForm?.lookup(PDFName.of('DR'), PDFDict)
+                                   ?.lookup(PDFName.of('Font'), PDFDict);
+            if (!drFont) return 0;
+
+            const declaradas = new Set(drFont.keys().map(k => k.asString().replace(/^\//, '')));
+
+            for (const campo of form.getFields()) {
+                const dict = campo.acroField.dict;
+                const da = dict.lookup(PDFName.of('DA'));
+                const texto = String(da?.asString?.() ?? da?.decodeText?.() ?? '');
+                if (!texto) continue;
+
+                const m = texto.match(/\/([^\s\/]+)\s+([\d.]+)\s+Tf/);
+                if (!m || declaradas.has(m[1])) continue;
+
+                // Las casillas escriben su marca con ZapfDingbats; el resto,
+                // texto normal. El tamaño se conserva: 0 significa "ajustar
+                // al hueco", que es lo que quieren muchas plantillas.
+                const esCasilla = typeof campo.isChecked === 'function';
+                const fuente = esCasilla ? 'ZaDb' : 'Helv';
+
+                dict.set(PDFName.of('DA'),
+                    PDFString.of(`/${fuente} ${m[2]} Tf 0 g`));
+                arreglados++;
+            }
+
+            if (arreglados) {
+                this.debug('SUCCESS', { action: 'Fuentes saneadas en el /DA', campos: arreglados });
+            }
+        } catch (e) {
+            this.debug('WARN', { action: 'No se pudieron sanear las fuentes', error: e.message });
+        }
+        return arreglados;
+    }
+
     ensureFillable(pdfDoc) {
         const { PDFName, PDFDict } = this.PDFLib;
 
         try {
             const form = pdfDoc.getForm();
 
-            // 1. Generar las apariencias de todos los campos
+            // 1. Declarar las fuentes ANTES de generar las apariencias.
+            //
+            //    Sin esto el documento salia con referencias colgando: los
+            //    campos pedian /Helvetica y /dummy__noop en su /DA, y el /DR
+            //    del AcroForm —donde se declara que fuentes existen— solo
+            //    tenia /Helv y /ZaDb. Un visor en pantalla es indulgente y
+            //    resuelve la fuente por su cuenta; el motor de impresion no,
+            //    y de ahi salian las dos cosas a la vez: Acrobat diciendo
+            //    "the document could not be printed" y la hoja saliendo en
+            //    blanco con los campos vacios.
+            const helv = this.declararFuentes(pdfDoc);
+
+            // 2. Generar las apariencias con esa fuente, no con la que cada
+            //    campo traiga: asi todas las /AP salen consistentes entre si
+            //    y con lo declarado.
             try {
-                form.updateFieldAppearances();
+                if (helv) form.updateFieldAppearances(helv);
+                else form.updateFieldAppearances();
             } catch (e) {
                 this.debug('WARN', { action: 'updateFieldAppearances fallo', error: e.message });
+                try { form.updateFieldAppearances(); } catch (e2) {}
             }
 
-            // 2. Si la plantilla traia NeedAppearances puesto, se retira por
+            // 3. Barrido final: cualquier /DA que siga apuntando a una fuente
+            //    no declarada se reescribe a una que si lo este. pdf-lib deja
+            //    /dummy__noop en las casillas, que es su marcador interno
+            //    para "aqui no se dibuja texto" y no una fuente de verdad.
+            this.sanearFuentes(pdfDoc, form);
+
+            // 4. Si la plantilla traia NeedAppearances puesto, se retira por
             //    el mismo motivo
             const acroForm = pdfDoc.catalog.lookup(PDFName.of('AcroForm'), PDFDict);
             if (acroForm) {
                 acroForm.delete(PDFName.of('NeedAppearances'));
             }
 
-            // 3. Quitar el bit de solo-lectura que traen algunas plantillas.
+            // 5. Quitar el bit de solo-lectura que traen algunas plantillas.
             //    Bit 1 del flag /Ff = ReadOnly.
             let liberados = 0;
             for (const field of form.getFields()) {
@@ -1360,10 +1475,7 @@ class PDFGenerator {
                 this.ensureFillable(pdfDoc);
             }
 
-            const pdfBytes = await pdfDoc.save({
-                updateExisting: true,
-                addDefaultPage: false
-            });
+            const pdfBytes = await this.serializar(pdfDoc);
             
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             this.debug('SUCCESS', { action: 'PDF saved', filename, size: `${(blob.size / 1024).toFixed(1)} KB` });
@@ -1373,6 +1485,27 @@ class PDFGenerator {
             this.debug('ERROR', { action: 'Error saving PDF', error: error.message });
             throw error;
         }
+    }
+
+    /**
+     * Bytes del PDF, escritos de la forma mas compatible posible.
+     *
+     * useObjectStreams: false es el motivo de que esto exista. Por defecto
+     * pdf-lib empaqueta los objetos en flujos comprimidos —mas pequeño, y
+     * perfectamente valido desde PDF 1.5—, pero hay lectores que se atragantan
+     * con esa tabla de referencias, y Acrobat en un equipo de trabajo suele ir
+     * varias versiones por detras. Un PDF con la tabla clasica lo abre y lo
+     * imprime cualquier cosa.
+     *
+     * El precio es tamaño. Vale la pena: un parte que no se puede imprimir no
+     * sirve de nada, por poco que ocupe.
+     */
+    async serializar(pdfDoc) {
+        return await pdfDoc.save({
+            updateExisting: true,
+            addDefaultPage: false,
+            useObjectStreams: false
+        });
     }
 
     /**

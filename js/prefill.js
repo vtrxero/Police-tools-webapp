@@ -1,33 +1,35 @@
 /**
- * MI INFORMACION - Police Tools
+ * EMPEZAR EL PARTE - Police Tools
  *
- * Un boton de Prefill fijo en Patrol Log, PMCS y Guard Mount.
+ * Una sola tarjeta encima del formulario vacio: "Start today's report", con
+ * lo que la app ya sabe listado debajo y un boton que lo pone todo.
  *
- * El oficial guarda una vez lo que no cambia —su nombre, su MID, la
- * patrulla, el vehiculo, el supervisor de turno— y a partir de ahi cada
- * parte del dia arranca con todo eso puesto. Antes solo existia "usar los
- * datos del turno anterior", que aparecia sin pedirlo, solo si el
- * formulario estaba casi vacio, y desaparecia despues de un uso: no servia
- * para lo que hace falta todos los dias.
+ * POR QUE UNA Y NO TRES
  *
- * QUE SE GUARDA
+ * Antes habia tres cosas peleandose por ese hueco: dos botones —Prefill y
+ * Save my info—, la tarjeta "Use data from last shift" que salia sola, y la
+ * del turno de hoy. Tres maneras distintas de hacer casi lo mismo, cada una
+ * con sus reglas de cuando aparece y cuando no. El oficial que abre el parte
+ * a las cinco y media de la manana no tiene que elegir entre tres botones:
+ * tiene que empezar a escribir.
  *
- * Lo que haya escrito en el formulario cuando se pulsa "Save my info",
- * menos los campos que son del dia y no de la persona. Guardar por
- * exclusion y no por una lista de campos permitidos es a proposito: la
- * lista habria que ampliarla cada vez que un formulario gana un campo, y un
- * campo olvidado no da error, simplemente no se rellena nunca y nadie sabe
- * por que.
+ * Ahora hay una tarjeta, un boton, y dice de antemano que va a poner.
  *
- * QUE NO SE GUARDA NUNCA
+ * NADA QUE GUARDAR A MANO
+ *
+ * "Save my info" tambien se fue. Obligaba a acordarse de pulsarlo, y quien no
+ * lo pulsara no tenia prefill nunca —sin ninguna pista de por que—. Los datos
+ * que se repiten se aprenden solos de cada documento que se archiva: nombre,
+ * MID, patrulla, vehiculo, unidad, supervisor. Es lo mismo que se escribio
+ * ayer, asi que no hay nada que decidir.
+ *
+ * LO QUE NO SE APRENDE NUNCA
  *
  * Fechas, millajes, firmas, las casillas de inspeccion del PMCS y sus
- * observaciones, los conteos de citaciones y los campos de texto libre.
- *
- * Las casillas del PMCS y las firmas quedan fuera por algo mas que comodidad:
- * arrastrar el "before/after" de ayer seria dar por inspeccionado un vehiculo
- * que hoy nadie ha mirado, y arrastrar una firma seria firmar un documento
- * sin haberlo leido. Eso no es rellenar, es falsear un parte.
+ * observaciones, los conteos y el texto libre. Las casillas y las firmas no
+ * es comodidad: arrastrar el before/after de ayer seria dar por inspeccionado
+ * un vehiculo que hoy nadie ha mirado, y arrastrar una firma seria firmar sin
+ * leer. Eso no es rellenar un parte, es falsearlo.
  */
 
 (function () {
@@ -41,20 +43,39 @@
         'guard-mount-view': 'guardmount'
     };
 
-    const app = () => window.app;
+    const FORMULARIO = {
+        patrol: 'patrol-form',
+        pmcs: 'pmcs-form',
+        guardmount: 'guardmount-form'
+    };
 
-    /** Campos del dia, no de la persona: nunca se guardan ni se rellenan. */
+    // Como se llama cada campo cuando se lo enseña al oficial. Sin esto la
+    // tarjeta diria "police_name", que es el nombre de la casilla del PDF.
+    const ROTULOS = {
+        police_name: 'Officer', mid: 'MID', patrol: 'Patrol', vehicle: 'Vehicle',
+        radio_no: 'Radio', shift_days: 'Days', shift_swings: 'Swings', shift_mid: 'Mid',
+        unit: 'Unit', vehicle_number: 'Vehicle', vehicle_type: 'Type', shift: 'Shift',
+        operator_name: 'Operator', supervisor_name: 'Supervisor',
+        supervisor_rank: 'Rank', desk_sergeant_name: 'Desk sergeant',
+        inspection_location: 'Location', hours: 'Hours',
+        from_shift_supervisor: 'From', to_desk_officer: 'To',
+        guardmount_conducted: 'Conducted by', trainer: 'Trainer'
+    };
+
+    const app = () => window.app;
+    const turnos = () => window.PoliceToolsShiftTools;
+
+    /** Campos del dia, no de la persona: no se aprenden ni se rellenan. */
     const DEL_DIA = [
         /^date$/,
         /mileage|odometer/,
-        /_sign$/, /_signature$/,          // firmar por adelantado, no
-        /_before$/, /_after$/,            // inspeccion del PMCS de hoy
+        /_sign$/, /_signature$/,
+        /_before$/, /_after$/,
         /_remark$/,
         /^remarks$/, /^comments$/,
         /^citations_/, /^dd_fm_/, /^da_fm_/, /^verbal_warning$/,
         /^fuel/, /^oil$/, /^other_maintenance$/,
-        /^trainer_subject$/,
-        /^additional_operators$/
+        /^trainer_subject$/, /^additional_operators$/
     ];
 
     function esDelDia(nombre) {
@@ -71,89 +92,39 @@
         catch (e) { console.warn('[prefill] no se pudo guardar:', e.message); }
     }
 
-    /** Los campos utiles del formulario, ya filtrados. */
-    function camposDe(form) {
-        return [...form.querySelectorAll('input, select, textarea')].filter(el => {
-            const n = el.name;
-            return n && el.type !== 'hidden' && !el.readOnly && !el.disabled && !esDelDia(n);
-        });
-    }
-
-    function tieneValor(el) {
-        if (el.type === 'checkbox' || el.type === 'radio') return el.checked;
-        return String(el.value || '').trim() !== '';
-    }
-
     // ============================================
-    // GUARDAR Y RELLENAR
+    // APRENDER
     // ============================================
-
-    function recoger(form) {
-        const datos = {};
-        camposDe(form).forEach(el => {
-            if (el.type === 'checkbox') {
-                if (el.checked) datos[el.name] = true;
-            } else if (el.type === 'radio') {
-                // Un grupo de radios comparte nombre: vale el que este marcado
-                if (el.checked) datos[el.name] = el.value;
-            } else if (tieneValor(el)) {
-                datos[el.name] = el.value;
-            }
-        });
-        return datos;
-    }
 
     /**
-     * Rellena solo lo que este vacio.
-     *
-     * Pisar lo ya escrito seria peor que no rellenar: el oficial que cambio
-     * de patrulla hoy y le da al boton sin querer perderia el dato correcto
-     * sin enterarse.
+     * Se llama al archivar un documento. Lo que se acaba de escribir y no es
+     * del dia pasa a ser lo que se propone mañana.
      */
-    function aplicar(form, datos) {
-        let puestos = 0;
+    function recordar(tipo, payload) {
+        if (!FORMULARIO[tipo] || !payload) return 0;
 
-        for (const [nombre, valor] of Object.entries(datos || {})) {
-            const grupo = [...form.querySelectorAll(`[name="${CSS.escape(nombre)}"]`)];
-            if (!grupo.length) continue;
-
-            const primero = grupo[0];
-
-            if (primero.type === 'radio') {
-                if (grupo.some(r => r.checked)) continue;
-                const elegido = grupo.find(r => r.value === valor);
-                if (!elegido) continue;
-                elegido.checked = true;
-                elegido.dispatchEvent(new Event('change', { bubbles: true }));
-                puestos++;
-                continue;
-            }
-
-            if (primero.type === 'checkbox') {
-                if (primero.checked) continue;
-                primero.checked = !!valor;
-                primero.dispatchEvent(new Event('change', { bubbles: true }));
-                puestos++;
-                continue;
-            }
-
-            if (tieneValor(primero)) continue;
-            primero.value = valor;
-            primero.dispatchEvent(new Event('input', { bubbles: true }));
-            primero.dispatchEvent(new Event('change', { bubbles: true }));
-            puestos++;
+        const datos = {};
+        for (const [k, v] of Object.entries(payload)) {
+            if (esDelDia(k)) continue;
+            if (v === '' || v === null || v === undefined || v === false) continue;
+            if (typeof v === 'object') continue;   // misiones, personal: no son datos fijos
+            datos[k] = v;
         }
 
-        return puestos;
+        const n = Object.keys(datos).length;
+        if (!n) return 0;
+
+        const todo = leerTodo();
+        todo[tipo] = { datos, guardado: new Date().toISOString() };
+        guardarTodo(todo);
+        return n;
     }
 
-    /**
-     * Sin nada guardado todavia, se tira del ultimo parte del mismo tipo.
-     *
-     * Asi el boton sirve desde el primer dia, sin tener que acordarse de
-     * guardar nada antes.
-     */
-    function respaldoDelUltimo(tipo) {
+    /** Lo que se propondra: lo aprendido, o el ultimo documento si no hay nada. */
+    function loQueSabemos(tipo) {
+        const guardado = leerTodo()[tipo]?.datos;
+        if (guardado && Object.keys(guardado).length) return guardado;
+
         const anterior = (app()?.dailyReports || []).find(r => r.type === tipo);
         if (!anterior?.formData) return null;
 
@@ -161,96 +132,160 @@
         for (const [k, v] of Object.entries(anterior.formData)) {
             if (esDelDia(k)) continue;
             if (v === '' || v === null || v === undefined || v === false) continue;
+            if (typeof v === 'object') continue;
             datos[k] = v;
         }
         return Object.keys(datos).length ? datos : null;
     }
 
     // ============================================
-    // LA BARRA
+    // RELLENAR
     // ============================================
+
+    function vacio(el) {
+        if (!el) return false;
+        if (el.type === 'checkbox' || el.type === 'radio') return !el.checked;
+        return String(el.value || '').trim() === '';
+    }
+
+    /** Solo lo que este vacio: pisar lo escrito seria peor que no rellenar. */
+    function poner(form, nombre, valor) {
+        const grupo = [...form.querySelectorAll(`[name="${CSS.escape(nombre)}"]`)];
+        if (!grupo.length) return false;
+
+        const primero = grupo[0];
+
+        if (primero.type === 'radio') {
+            if (grupo.some(r => r.checked)) return false;
+            const elegido = grupo.find(r => r.value === valor);
+            if (!elegido) return false;
+            elegido.checked = true;
+            elegido.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }
+
+        if (primero.type === 'checkbox') {
+            if (primero.checked) return false;
+            primero.checked = !!valor;
+            primero.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }
+
+        if (!vacio(primero)) return false;
+        primero.value = valor;
+        primero.dispatchEvent(new Event('input', { bubbles: true }));
+        primero.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+    }
+
+    // ============================================
+    // QUE SE VA A PONER
+    // ============================================
+
+    /**
+     * La lista completa: los datos que se repiten, mas la fecha y el turno de
+     * hoy si el formulario los tiene.
+     *
+     * Va todo junto a proposito. Antes la fecha venia de una tarjeta y el
+     * nombre de otra, asi que empezar el parte costaba dos botones en dos
+     * sitios distintos, y con dos toasts.
+     */
+    function propuesta(tipo, form) {
+        const campos = [];
+
+        const sabido = loQueSabemos(tipo) || {};
+        for (const [nombre, valor] of Object.entries(sabido)) {
+            const el = form.querySelector(`[name="${CSS.escape(nombre)}"]`);
+            if (!el || !vacio(el)) continue;
+            campos.push({ nombre, valor, rotulo: ROTULOS[nombre] || nombre });
+        }
+
+        // Fecha y casilla del turno, del calendario
+        if (tipo === 'patrol') {
+            const t = turnos()?.datosDelTurno?.();
+            if (t) {
+                if (vacio(form.querySelector('[name="date"]'))) {
+                    campos.push({ nombre: 'date', valor: t.fecha, rotulo: 'Date' });
+                }
+                const casilla = form.querySelector(`[name="${t.casilla}"]`);
+                if (casilla && vacio(casilla)) {
+                    campos.push({ nombre: t.casilla, valor: true, rotulo: t.etiqueta });
+                }
+            }
+        } else if (vacio(form.querySelector('[name="date"]'))) {
+            const dia = window.PoliceToolsHome?.diaDeTrabajo?.();
+            if (dia) campos.push({ nombre: 'date', valor: dia, rotulo: 'Date' });
+        }
+
+        return campos;
+    }
+
+    /** "SGT Morales · S-1 · 85Y · Aug 20" — para verlo antes de pulsar. */
+    function resumen(campos) {
+        return campos
+            .map(c => (c.valor === true ? c.rotulo : String(c.valor)))
+            .slice(0, 6)
+            .join(' · ');
+    }
+
+    // ============================================
+    // LA TARJETA
+    // ============================================
+
+    // Descartada a mano: no vuelve mientras no se cambie de formulario
+    const descartadas = {};
 
     function montar(vista) {
         const tipo = VISTAS[vista.id];
         if (!tipo) return;
 
-        const form = vista.querySelector('form');
+        const form = document.getElementById(FORMULARIO[tipo]);
         if (!form) return;
 
-        let barra = form.querySelector('.pf-bar');
-        if (!barra) {
-            barra = document.createElement('div');
-            barra.className = 'pf-bar';
-            barra.innerHTML = `
-                <button type="button" class="pf-btn pf-fill">
-                    <span class="pf-ico">▤</span>
-                    <span class="pf-txt"><b>Prefill</b><em></em></span>
-                </button>
-                <button type="button" class="pf-btn pf-save">
-                    <span class="pf-ico">☑</span>
-                    <span class="pf-txt"><b>Save my info</b><em>from this form</em></span>
-                </button>
-            `;
-            form.insertBefore(barra, form.firstChild);
+        const anterior = form.querySelector('.pf-card');
+        const campos = propuesta(tipo, form);
 
-            barra.querySelector('.pf-fill').addEventListener('click', () => rellenar(form, tipo, barra));
-            barra.querySelector('.pf-save').addEventListener('click', () => guardar(form, tipo, barra));
-        }
-
-        actualizar(barra, tipo);
-    }
-
-    function actualizar(barra, tipo) {
-        const guardado = leerTodo()[tipo];
-        const n = guardado ? Object.keys(guardado.datos || {}).length : 0;
-        const em = barra.querySelector('.pf-fill em');
-
-        if (n) {
-            em.textContent = `${n} saved field${n === 1 ? '' : 's'}`;
-        } else {
-            em.textContent = respaldoDelUltimo(tipo) ? 'from your last report' : 'nothing saved yet';
-        }
-    }
-
-    function guardar(form, tipo, barra) {
-        const datos = recoger(form);
-        const n = Object.keys(datos).length;
-
-        if (!n) {
-            app()?.showToast('Fill the form first, then save it as your info', 'warning');
+        // Sin nada que aportar, la tarjeta no pinta nada en la pantalla
+        if (!campos.length || descartadas[tipo]) {
+            if (anterior) anterior.remove();
             return;
         }
 
-        const todo = leerTodo();
-        todo[tipo] = { datos, guardado: new Date().toISOString() };
-        guardarTodo(todo);
-
-        actualizar(barra, tipo);
-        app()?.showToast(`${n} field(s) saved as your info`, 'success');
-        window.PoliceToolsMobile?.haptics.success();
-    }
-
-    function rellenar(form, tipo, barra) {
-        const guardado = leerTodo()[tipo]?.datos;
-        const datos = (guardado && Object.keys(guardado).length)
-            ? guardado
-            : respaldoDelUltimo(tipo);
-
-        if (!datos) {
-            app()?.showToast('Nothing saved yet — fill the form and tap "Save my info"', 'warning');
+        if (anterior) {
+            anterior.querySelector('.pf-lista').textContent = resumen(campos);
+            anterior.dataset.n = campos.length;
             return;
         }
 
-        const puestos = aplicar(form, datos);
+        const caja = document.createElement('div');
+        caja.className = 'pf-card';
+        caja.dataset.n = campos.length;
+        caja.innerHTML = `
+            <button type="button" class="pf-x" aria-label="Dismiss">×</button>
+            <div class="pf-cab">
+                <span class="pf-ico">▤</span>
+                <b>Start today's report</b>
+            </div>
+            <p class="pf-lista">${resumen(campos)}</p>
+            <button type="button" class="pf-go">Fill it in</button>
+        `;
 
-        if (!puestos) {
-            app()?.showToast('Everything was already filled in', 'info');
-            return;
-        }
+        caja.querySelector('.pf-go').addEventListener('click', () => {
+            const lista = propuesta(tipo, form);
+            let n = 0;
+            lista.forEach(c => { if (poner(form, c.nombre, c.valor)) n++; });
 
-        app()?.showToast(`${puestos} field(s) filled`, 'success');
-        window.PoliceToolsMobile?.haptics.success();
-        actualizar(barra, tipo);
+            caja.remove();
+            app()?.showToast(`${n} field(s) filled in`, 'success');
+            window.PoliceToolsMobile?.haptics.success();
+        });
+
+        caja.querySelector('.pf-x').addEventListener('click', () => {
+            descartadas[tipo] = true;
+            caja.remove();
+        });
+
+        form.insertBefore(caja, form.firstChild);
     }
 
     // ============================================
@@ -262,11 +297,15 @@
         if (vista) montar(vista);
     }
 
+    /** Tras "Create new form": la tarjeta vuelve, que es justo cuando sirve. */
+    function alEmpezarDeNuevo(tipo) {
+        descartadas[tipo] = false;
+        setTimeout(refrescar, 60);
+    }
+
     function init() {
-        // Las vistas se muestran quitando y poniendo una clase, sin evento
-        // propio, asi que se mira cuando cambia y al abrir cualquier pestaña.
-        document.addEventListener('click', () => setTimeout(refrescar, 120));
-        document.addEventListener('reportschanged', refrescar);
+        document.addEventListener('click', () => setTimeout(refrescar, 150));
+        document.addEventListener('reportschanged', () => setTimeout(refrescar, 200));
         setTimeout(refrescar, 1200);
     }
 
@@ -276,5 +315,7 @@
         init();
     }
 
-    window.PoliceToolsPrefill = { refrescar, recoger, aplicar, esDelDia, CLAVE };
+    window.PoliceToolsPrefill = {
+        refrescar, recordar, loQueSabemos, propuesta, alEmpezarDeNuevo, esDelDia, CLAVE
+    };
 })();

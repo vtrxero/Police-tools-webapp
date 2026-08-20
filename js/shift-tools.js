@@ -332,7 +332,9 @@
             // porque es el dato de este documento; continuar del anterior es
             // secundario.
             montarContinuacion(vista);
-            montarTurnoDeHoy(vista);
+            // montarTurnoDeHoy ya no monta tarjeta propia: la fecha y la
+            // casilla del turno entran en la tarjeta unica de js/prefill.js,
+            // que llama a datosDelTurno() para sacarlas.
             montarActividades(vista);
         }
     }

@@ -263,7 +263,10 @@
         montar(vista);
         actualizar(vista);
         actualizarBotones(vista, tipo);
-        montarPrellenado(vista, tipo);
+        // El prellenado lo lleva ahora js/prefill.js, en una sola tarjeta.
+        // Aqui habia otra, "Use data from last shift", que salia sin pedirla
+        // y competia por el mismo hueco: tres tarjetas encima del formulario
+        // no ayudan a empezar, confunden.
     }
 
     function init() {

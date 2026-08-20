@@ -1725,43 +1725,32 @@ body.keyboard-open .bottom-nav {
 }
 
 /* ============================================
-   24c. MI INFORMACION (js/prefill.js)
+   24c. EMPEZAR EL PARTE (js/prefill.js)
    ============================================ */
 
-/* Dos botones en fila arriba del formulario. Van juntos a proposito:
-   guardar y rellenar son la misma idea vista desde los dos lados, y
-   separarlos obligaria a buscar el segundo en otro sitio. */
-.pf-bar {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+/* Una tarjeta, no dos botones en fila. Los dos de antes —Prefill y Save my
+   info— obligaban a leer y elegir antes de empezar a escribir, y no decian
+   que iba a pasar al pulsarlos. */
+.pf-card {
+    position: relative;
     margin-bottom: 16px;
+    padding: 14px 16px 16px;
+    border: 1px solid var(--accent-blue);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--accent-blue) 12%, var(--bg-card));
 }
 
-.pf-btn {
+.pf-cab {
     display: flex;
     align-items: center;
-    gap: 9px;
-    min-width: 0;
-    min-height: 56px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
-    background: var(--bg-card);
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.pf-cab b {
+    font-size: 0.98rem;
+    font-weight: 650;
     color: var(--text-primary);
-    font-family: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-
-/* El de rellenar es el de todos los dias; el de guardar se usa una vez */
-.pf-btn.pf-fill {
-    border: 1px solid var(--accent-blue);
-    background: color-mix(in srgb, var(--accent-blue) 14%, var(--bg-card));
-}
-
-.pf-btn:active {
-    transform: scale(0.985);
 }
 
 .pf-ico {
@@ -1771,35 +1760,51 @@ body.keyboard-open .bottom-nav {
     display: grid;
     place-items: center;
     border-radius: 9px;
-    background: var(--bg-secondary);
-    color: var(--accent-blue);
+    background: var(--accent-blue);
+    color: #fff;
     font-size: 0.95rem;
 }
 
-.pf-fill .pf-ico {
+/* Lo que se va a poner, antes de pulsar. Es la diferencia entre un boton que
+   hace algo y un boton en el que hay que confiar. */
+.pf-lista {
+    margin: 0 0 12px;
+    padding-right: 24px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.pf-go {
+    width: 100%;
+    min-height: 46px;
+    border: none;
+    border-radius: 11px;
     background: var(--accent-blue);
     color: #fff;
-}
-
-/* min-width: 0 para que el texto largo se corte en vez de estirar la
-   columna y sacar el segundo boton de la pantalla. */
-.pf-txt {
-    min-width: 0;
-}
-
-.pf-txt b {
-    display: block;
-    font-size: 0.86rem;
+    font-family: inherit;
+    font-size: 0.92rem;
     font-weight: 650;
-    line-height: 1.2;
+    cursor: pointer;
 }
 
-.pf-txt em {
-    display: block;
-    font-style: normal;
-    font-size: 0.7rem;
-    line-height: 1.25;
-    color: var(--text-secondary);
-    margin-top: 2px;
-    overflow-wrap: anywhere;
+.pf-go:active {
+    transform: scale(0.985);
+}
+
+/* Descartar sin rellenar: quien ya sabe lo que va a escribir no tiene que
+   pelearse con una tarjeta que no se quita. */
+.pf-x {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
 }

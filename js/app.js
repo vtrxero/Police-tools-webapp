@@ -1496,7 +1496,7 @@ class PoliceToolsApp {
             // Se guarda como formulario rellenable: aplanar aqui dejaba el
             // documento archivado sin campos editables.
             pdfGenerator.ensureFillable(pdfDoc);
-            const pdfBytes = await pdfDoc.save();
+            const pdfBytes = await pdfGenerator.serializar(pdfDoc);
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
 
             // Build title with name for Interview Worksheet
@@ -1584,6 +1584,12 @@ class PoliceToolsApp {
             // guardar un documento no se enteraba ninguno.
             document.dispatchEvent(new CustomEvent('reportschanged'));
 
+            // Lo que se acaba de escribir es lo que se propondra mañana.
+            // Se aprende aqui y no con un boton: obligar a acordarse de
+            // pulsar "guardar mi info" hacia que quien no lo pulsara no
+            // tuviera prefill nunca, sin ninguna pista de por que.
+            window.PoliceToolsPrefill?.recordar(type, payload);
+
             if (!options.silencioso) {
                 this.showToast('Report saved to Daily Reports!', 'success');
             }
@@ -1615,6 +1621,10 @@ class PoliceToolsApp {
         // Y el borrador con el: pedir un formulario nuevo y que al volver
         // reapareciera lo de antes seria justo lo contrario de lo pedido.
         window.PoliceToolsDrafts?.borrar(type);
+
+        // Un formulario en blanco es justo cuando la tarjeta de empezar
+        // sirve, asi que vuelve aunque se hubiera descartado antes.
+        window.PoliceToolsPrefill?.alEmpezarDeNuevo(type);
         
         // Reset editing state
         this.editingEntry = { type: null, index: null };
