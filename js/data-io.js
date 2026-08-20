@@ -69,8 +69,13 @@
 
     /** Obtiene el PDF de un reporte como File, venga del store o de base64. */
     async function reporteAFichero(reporte) {
-        const blob = app() ? await app().getReportBlob(reporte) : null;
+        let blob = app() ? await app().getReportBlob(reporte) : null;
         if (!blob) return null;
+
+        // Lo que se manda por correo va aplanado: el que lo recibe lo imprime,
+        // y con los campos de formulario la hoja sale con las lineas y sin los
+        // datos. El archivado se queda editable.
+        if (app()?.paraSalir) blob = await app().paraSalir(blob);
         return new File([blob], reporte.filename || 'documento.pdf', { type: 'application/pdf' });
     }
 

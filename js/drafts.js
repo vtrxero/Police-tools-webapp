@@ -219,13 +219,13 @@
             });
         }
 
-        // Se restaura una vez, con los formularios ya en el DOM
-        setTimeout(() => {
-            const n = restaurarTodo();
-            if (n) {
-                app()?.showToast(`Restored ${n} field(s) you had filled in`, 'info');
-            }
-        }, 900);
+        // Se restaura una vez, con los formularios ya en el DOM.
+        //
+        // Sin avisar. El aviso salia en cada arranque —"Restored 65 fields"—
+        // y no servia para nada: que lo escrito siga ahi es lo que se espera,
+        // no una noticia. Lo unico que hacia era tapar la pantalla y vibrar
+        // cada vez que se abria la app.
+        setTimeout(restaurarTodo, 900);
     }
 
     if (document.readyState === 'loading') {

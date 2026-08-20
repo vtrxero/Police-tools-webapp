@@ -512,7 +512,6 @@ class PoliceToolsApp {
         document.getElementById('close-preview')?.addEventListener('click', () => this.closeModal());
         document.getElementById('modal-share')?.addEventListener('click', () => this.shareFromModal());
         document.getElementById('modal-download')?.addEventListener('click', () => this.downloadFromModal());
-        document.getElementById('modal-print')?.addEventListener('click', () => this.printCopyFromModal());
     }
 
     setupDynamicForms() {
@@ -1939,7 +1938,9 @@ class PoliceToolsApp {
         for (const report of reportes) {
             try {
                 const blob = await this.getReportBlob(report);
-                if (blob) items.push({ blob, nombre: report.filename });
+                // Aplanados tambien: estos van al correo del supervisor, que
+                // es justo el que los va a imprimir.
+                if (blob) items.push({ blob: await this.paraSalir(blob), nombre: report.filename });
                 else fallidos.push(report.filename);
             } catch (e) {
                 console.error('No se pudo leer el PDF:', report.filename, e);
@@ -2137,6 +2138,24 @@ class PoliceToolsApp {
         await this.mostrarPrevia(blob, report.filename);
     }
 
+    /**
+     * El PDF listo para salir de la app: aplanado, para que imprima.
+     *
+     * Se pasa por aqui todo lo que se descarga, se comparte o se manda por
+     * correo. El original con campos se queda archivado y editable.
+     *
+     * Si el aplanado falla sale el original: perder el formato de impresion
+     * es malo, no poder mandar el parte es peor.
+     */
+    async paraSalir(blob) {
+        try {
+            return await pdfGenerator.copiaParaImprimir(blob);
+        } catch (e) {
+            console.warn('[app] no se pudo aplanar para salir:', e.message);
+            return blob;
+        }
+    }
+
     async shareDailyReport(index) {
         const report = this.dailyReports[index];
         const blob = report ? await this.getReportBlob(report) : null;
@@ -2146,7 +2165,8 @@ class PoliceToolsApp {
         }
 
         try {
-            const res = await window.PTOut.compartir([{ blob, nombre: report.filename }], {
+            const salida = await this.paraSalir(blob);
+            const res = await window.PTOut.compartir([{ blob: salida, nombre: report.filename }], {
                 asunto: report.filename
             });
             this.showToast(res.via === 'descarga' ? 'Report downloaded' : 'Report shared', 'success');
@@ -2185,8 +2205,9 @@ class PoliceToolsApp {
         this.showLoading(true);
 
         try {
-            const res = await window.PTOut.descargar([{ blob, nombre: report.filename }]);
-            this.showToast(`Saved to ${res.donde} · and in Daily Reports`, 'success');
+            const salida = await this.paraSalir(blob);
+            const res = await window.PTOut.descargar([{ blob: salida, nombre: report.filename }]);
+            this.showToast(`Saved to ${res.donde}`, 'success');
         } catch (error) {
             console.error('Download error:', error);
             this.showToast('Error downloading PDF', 'error');
@@ -3078,6 +3099,31 @@ class PoliceToolsApp {
         const { pdfDoc, filename } = result;
         const { blob } = await pdfGenerator.savePDF(pdfDoc, filename);
 
+        /*
+         * Lo que sale de la app va aplanado; lo que se queda dentro, no.
+         *
+         * Son dos usos distintos y llevaban peleados desde el principio. El
+         * documento que se archiva tiene que poder corregirse, asi que
+         * conserva los campos. El que se descarga o se manda acaba en un PC
+         * y en una impresora, y ahi los campos son justo el problema: el
+         * visor los dibuja al abrirlos —por eso se veia bien en pantalla— y
+         * el motor de impresion no, asi que salia la hoja con las lineas y
+         * sin los datos.
+         *
+         * Esto estaba resuelto a medias con un boton "Print copy" aparte, y
+         * fallo por donde tenia que fallar: entre cinco ficheros que se
+         * llaman igual en la carpeta de Descargas, hay que acertar con el
+         * que lleva -PRINT. No es razonable pedir eso todos los dias. Ahora
+         * el fichero que sale es directamente el que imprime.
+         */
+        let salida = blob;
+        try {
+            salida = await pdfGenerator.copiaParaImprimir(blob);
+        } catch (e) {
+            // Si el aplanado falla, mejor el rellenable que nada
+            console.warn('[app] no se pudo aplanar, sale el rellenable:', e.message);
+        }
+
         // Archivar no puede tumbar la accion que el oficial pidio: si falla
         // el guardado, el PDF sigue estando para verlo o mandarlo.
         try {
@@ -3086,7 +3132,7 @@ class PoliceToolsApp {
             console.error('No se pudo archivar el documento:', e);
         }
 
-        return { pdfDoc, filename, blob };
+        return { pdfDoc, filename, blob, salida };
     }
 
     async previewPDF(type) {
@@ -3109,7 +3155,8 @@ class PoliceToolsApp {
             const doc = await this.crearDocumento(type);
             if (!doc) return;
 
-            const { filename, blob } = doc;
+            const { filename, salida } = doc;
+            const blob = salida;
 
             const res = await window.PTOut.compartir([{ blob, nombre: filename }], { asunto: filename });
             this.showToast(res.via === 'descarga'
@@ -3128,7 +3175,8 @@ class PoliceToolsApp {
             const doc = await this.crearDocumento(type);
             if (!doc) return;
 
-            const { filename, blob } = doc;
+            const { filename, salida } = doc;
+            const blob = salida;
 
             const res = await window.PTOut.descargar([{ blob, nombre: filename }]);
             this.showToast(`Saved to ${res.donde} · and in Daily Reports`, 'success');
@@ -3155,7 +3203,8 @@ class PoliceToolsApp {
         if (!this.currentPDF) return;
         try {
             const { blob, filename } = this.currentPDF;
-            const res = await window.PTOut.compartir([{ blob, nombre: filename }], { asunto: filename });
+            const salida = await this.paraSalir(blob);
+            const res = await window.PTOut.compartir([{ blob: salida, nombre: filename }], { asunto: filename });
             this.showToast(res.via === 'descarga' ? 'Downloaded' : 'Shared', 'success');
         } catch (error) {
             if (error && (error.name === 'AbortError' || /cancel/i.test(error.message || ''))) return;
@@ -3168,44 +3217,12 @@ class PoliceToolsApp {
         if (!this.currentPDF) return;
         try {
             const { blob, filename } = this.currentPDF;
-            const res = await window.PTOut.descargar([{ blob, nombre: filename }]);
-            this.showToast(`Saved to ${res.donde} · and in Daily Reports`, 'success');
+            const salida = await this.paraSalir(blob);
+            const res = await window.PTOut.descargar([{ blob: salida, nombre: filename }]);
+            this.showToast(`Saved to ${res.donde}`, 'success');
         } catch (error) {
             console.error('Download error:', error);
             this.showToast('Error downloading', 'error');
-        }
-    }
-
-    /**
-     * Descarga una copia aplanada, pensada para imprimir.
-     *
-     * El documento normal guarda los datos en campos de formulario y por eso
-     * sigue siendo editable, pero eso deja lo escrito en una capa que el visor
-     * dibuja encima de la pagina. Si ese visor no la dibuja al imprimir, sale
-     * la hoja con las lineas y sin los datos. La copia aplanada no depende de
-     * nadie: los datos son parte de la pagina.
-     *
-     * Va como fichero aparte, con -PRINT en el nombre, para no perder el
-     * documento editable que es el que se archiva y se manda.
-     */
-    async printCopyFromModal() {
-        if (!this.currentPDF) return;
-
-        try {
-            this.showLoading(true);
-            const { blob, filename } = this.currentPDF;
-
-            const plano = await pdfGenerator.copiaParaImprimir(blob);
-            const nombre = String(filename || 'documento.pdf')
-                .replace(/\.pdf$/i, '') + '-PRINT.pdf';
-
-            const res = await window.PTOut.descargar([{ blob: plano, nombre }]);
-            this.showLoading(false);
-            this.showToast(`Print copy saved to ${res.donde}`, 'success');
-        } catch (error) {
-            this.showLoading(false);
-            console.error('Print copy error:', error);
-            this.showToast('Could not build the print copy', 'error');
         }
     }
 
@@ -3415,9 +3432,9 @@ class PoliceToolsApp {
     }
     
     sendPushNotification(title, message) {
-        // Vibrate device
+        // Un toque corto, no el triple patron de antes
         if ('vibrate' in navigator) {
-            navigator.vibrate([200, 100, 200]);
+            navigator.vibrate(60);
         }
         
         // Play sound
@@ -3438,13 +3455,17 @@ class PoliceToolsApp {
         }
     }
     
-    playNotificationSound() {
-        try {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVanu8LdnGgU1k9n1unEiBC13yO/eizEIHWq+8+OZSA0PVantu6tlHAU2k9n1uHAiBCx2xPDdijAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCx2xO/eizAIHGm+8+OWSQ4OTqzs8blnHAU1k9r1uHAiBCiB');
-            audio.volume = 0.5;
-            audio.play().catch(() => {});
-        } catch (e) {}
-    }
+    /**
+     * Ya no suena nada.
+     *
+     * Era un WAV incrustado que sonaba en cada aviso, y en el telefono salia
+     * al abrir la app —el recordatorio del PMCS crea un aviso al arrancar—.
+     * Un pitido que no se puede quitar y que no aporta nada en una app que se
+     * usa de madrugada dentro de una patrulla. La vibracion se queda, que esa
+     * si se nota con el telefono en el bolsillo y no molesta a nadie.
+     */
+    playNotificationSound() {}
+
     
     closeMenuDropdown() {
         const menuDropdown = document.getElementById('menu-dropdown');
