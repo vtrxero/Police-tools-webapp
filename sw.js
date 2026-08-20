@@ -11,7 +11,7 @@
  *   - Plantillas PDF: cache-first (son pesadas y no cambian).
  */
 
-const VERSION = 'v2.5.0';
+const VERSION = 'v2.6.0';
 const SHELL_CACHE = `police-tools-shell-${VERSION}`;
 const PDF_CACHE = `police-tools-pdf-${VERSION}`;
 const RUNTIME_CACHE = `police-tools-runtime-${VERSION}`;

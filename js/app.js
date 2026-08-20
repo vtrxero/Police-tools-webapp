@@ -257,7 +257,28 @@ class PoliceToolsApp {
                 payload = this.collectFormData('pmcs-form');
                 break;
         }
-        
+
+        /*
+         * El nombre del oficial cae en la casilla "1. PRINT" del bloque de
+         * firmas cuando esa esta vacia.
+         *
+         * En el formulario de la app "POLICE NAME" esta arriba, junto a la
+         * patrulla, y en el papel no hay ninguna casilla ahi: el unico sitio
+         * donde va el nombre es la primera linea PRINT del bloque de firmas.
+         * El mapeo lo daba por inexistente (pdfField: null) y no lo escribia
+         * en ninguna parte, asi que el parte salia sin el nombre de quien lo
+         * hizo —ni en pantalla ni en papel— aunque estuviera escrito en la
+         * app. Solo aparecia si ademas se rellenaba a mano el bloque de
+         * firmas, que es lo que lo tapaba.
+         *
+         * No pisa sig1_print si ya trae algo: el bloque de firmas puede
+         * llevar a otro oficial.
+         */
+        if (type === 'patrol' && !String(payload.sig1_print || '').trim()) {
+            const nombre = String(payload.police_name || '').trim();
+            if (nombre) payload.sig1_print = nombre;
+        }
+
         // Log all fields with values for debugging
         const fieldsWithValues = Object.entries(payload).filter(([k, v]) => {
             if (Array.isArray(v)) return v.length > 0;
