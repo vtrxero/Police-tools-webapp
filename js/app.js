@@ -491,6 +491,7 @@ class PoliceToolsApp {
         document.getElementById('close-preview')?.addEventListener('click', () => this.closeModal());
         document.getElementById('modal-share')?.addEventListener('click', () => this.shareFromModal());
         document.getElementById('modal-download')?.addEventListener('click', () => this.downloadFromModal());
+        document.getElementById('modal-print')?.addEventListener('click', () => this.printCopyFromModal());
     }
 
     setupDynamicForms() {
@@ -3151,6 +3152,39 @@ class PoliceToolsApp {
         } catch (error) {
             console.error('Download error:', error);
             this.showToast('Error downloading', 'error');
+        }
+    }
+
+    /**
+     * Descarga una copia aplanada, pensada para imprimir.
+     *
+     * El documento normal guarda los datos en campos de formulario y por eso
+     * sigue siendo editable, pero eso deja lo escrito en una capa que el visor
+     * dibuja encima de la pagina. Si ese visor no la dibuja al imprimir, sale
+     * la hoja con las lineas y sin los datos. La copia aplanada no depende de
+     * nadie: los datos son parte de la pagina.
+     *
+     * Va como fichero aparte, con -PRINT en el nombre, para no perder el
+     * documento editable que es el que se archiva y se manda.
+     */
+    async printCopyFromModal() {
+        if (!this.currentPDF) return;
+
+        try {
+            this.showLoading(true);
+            const { blob, filename } = this.currentPDF;
+
+            const plano = await pdfGenerator.copiaParaImprimir(blob);
+            const nombre = String(filename || 'documento.pdf')
+                .replace(/\.pdf$/i, '') + '-PRINT.pdf';
+
+            const res = await window.PTOut.descargar([{ blob: plano, nombre }]);
+            this.showLoading(false);
+            this.showToast(`Print copy saved to ${res.donde}`, 'success');
+        } catch (error) {
+            this.showLoading(false);
+            console.error('Print copy error:', error);
+            this.showToast('Could not build the print copy', 'error');
         }
     }
 

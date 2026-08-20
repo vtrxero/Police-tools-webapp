@@ -116,7 +116,7 @@ jobs:
             exit 1
           fi
           echo "PT_VERSION_CODE=$N" >> $GITHUB_ENV
-          echo "PT_VERSION_NAME=2.4.$N" >> $GITHUB_ENV
+          echo "PT_VERSION_NAME=2.5.$N" >> $GITHUB_ENV
 
       - name: Compilar debug
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon

@@ -1406,9 +1406,24 @@ class PDFGenerator {
             //    blanco con los campos vacios.
             const helv = this.declararFuentes(pdfDoc);
 
-            // 2. Generar las apariencias con esa fuente, no con la que cada
-            //    campo traiga: asi todas las /AP salen consistentes entre si
-            //    y con lo declarado.
+            // 2. Sanear los /DA ANTES de generar las apariencias.
+            //
+            //    El orden es el arreglo. Estaba al reves —generar y luego
+            //    sanear— y no servia de nada: la apariencia ya se habia
+            //    construido con el nombre viejo. El flujo que quedaba dentro
+            //    decia "/Helvetica 14 Tf" mientras su propio diccionario de
+            //    recursos solo declaraba /Helv, asi que el texto se dibujaba
+            //    con una fuente que ese flujo no podia resolver.
+            //
+            //    Eso explica las dos cosas que se veian: en pantalla el visor
+            //    no resuelve la fuente, reconstruye la apariencia entera y
+            //    enseña el valor —de ahi el parpadeo de vacio a lleno al
+            //    abrirlo—, y al imprimir no reconstruye nada: intenta dibujar,
+            //    no resuelve, y no pinta. Hoja en blanco con el formulario
+            //    lleno en la pantalla de al lado.
+            this.sanearFuentes(pdfDoc, form);
+
+            // 3. Ahora si: las apariencias se generan ya con la fuente buena.
             try {
                 if (helv) form.updateFieldAppearances(helv);
                 else form.updateFieldAppearances();
@@ -1416,12 +1431,6 @@ class PDFGenerator {
                 this.debug('WARN', { action: 'updateFieldAppearances fallo', error: e.message });
                 try { form.updateFieldAppearances(); } catch (e2) {}
             }
-
-            // 3. Barrido final: cualquier /DA que siga apuntando a una fuente
-            //    no declarada se reescribe a una que si lo este. pdf-lib deja
-            //    /dummy__noop en las casillas, que es su marcador interno
-            //    para "aqui no se dibuja texto" y no una fuente de verdad.
-            this.sanearFuentes(pdfDoc, form);
 
             // 4. Si la plantilla traia NeedAppearances puesto, se retira por
             //    el mismo motivo
@@ -1485,6 +1494,45 @@ class PDFGenerator {
             this.debug('ERROR', { action: 'Error saving PDF', error: error.message });
             throw error;
         }
+    }
+
+    /**
+     * Copia aplanada, para imprimir.
+     *
+     * El documento normal guarda los datos en campos de formulario, que es lo
+     * que lo mantiene editable. El precio es que lo escrito no vive en la
+     * pagina: vive en una capa de anotaciones que el visor dibuja encima, y si
+     * ese visor no la dibuja al imprimir, sale la hoja con las lineas y sin
+     * los datos.
+     *
+     * Aplanar convierte esos campos en tinta de la pagina, igual que las
+     * lineas del formulario. Deja de ser editable —por eso es una copia
+     * aparte y no el documento— pero ya no depende de que nadie interprete
+     * nada: si el visor imprime la pagina, imprime los datos.
+     *
+     * Se parte del PDF ya guardado y no del formulario en pantalla, para que
+     * la copia impresa sea exactamente el documento archivado.
+     */
+    async copiaParaImprimir(blob) {
+        const { PDFDocument } = this.PDFLib;
+
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        const doc = await PDFDocument.load(bytes);
+
+        const form = doc.getForm();
+
+        // Las apariencias se regeneran antes de aplanar: aplanar dibuja lo que
+        // haya en la apariencia de cada campo, asi que si alguna estuviera
+        // vacia se aplanaria el vacio.
+        this.declararFuentes(doc);
+        this.sanearFuentes(doc, form);
+        try { form.updateFieldAppearances(); } catch (e) {}
+
+        form.flatten();
+
+        const salida = await this.serializar(doc);
+        this.debug('SUCCESS', { action: 'Copia para imprimir', tam: salida.length });
+        return new Blob([salida], { type: 'application/pdf' });
     }
 
     /**
