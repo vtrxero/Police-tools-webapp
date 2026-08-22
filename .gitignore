@@ -23,3 +23,17 @@ android/app/release.keystore
 # actualizacion y hay que desinstalar, perdiendo los reportes. Su contraseña
 # es publica y conocida: no acredita nada, solo mantiene la firma estable.
 !android/app/debug.keystore
+
+# Skills de agente instaladas con `npx skills add`.
+#
+# Son instrucciones de terceros que se bajan a la carpeta del proyecto, no
+# codigo de la app: nada de lo que hay aqui entra en el APK ni lo necesita
+# quien clone el repositorio para compilarlo. Fuera del control de versiones
+# para que un `git add -A` no acabe metiendo 320 KB de material ajeno en un
+# repositorio de trabajo.
+#
+# Si algun dia se quiere que quien clone tenga las mismas, se quitan estas
+# tres lineas y se commitean.
+.agents/
+.claude/
+skills-lock.json
