@@ -4,15 +4,65 @@ La app es la misma en web y en Android: Capacitor empaqueta los archivos de
 `www/` dentro del APK, así que funciona sin conexión y sin necesidad de
 alojar nada.
 
+## Dos versiones instaladas a la vez
+
+Hay dos aplicaciones, no una con dos compilaciones:
+
+| | Police Tools | Police Tools V2 |
+|---|---|---|
+| `applicationId` | `mil.buchanan.policetools` | `mil.buchanan.policetools.v2` |
+| Nombre en el lanzador | Police Tools | Police Tools V2 |
+| Versión | 2.7.x | 1.0.x |
+| Release | `apk-latest` | `apk-v2` |
+| Fichero | `PoliceTools.apk` | `PoliceToolsV2.apk` |
+| Carpeta en Documents | `PoliceTools/` | `PoliceToolsV2/` |
+| Rama | `claude/abrir-esto-m2sdix` | `claude/civilian-police-app-ideas-nctsgk` |
+
+Lo que las separa es el **`applicationId`**: Android identifica una app por ese
+valor. Con el mismo, instalar V2 *sustituiría* a la original; con el sufijo
+`.v2` son dos entradas distintas en el lanzador, cada una con su
+almacenamiento. La original se queda como está, funcionando, mientras V2 va
+creciendo.
+
+Tres cosas más tuvieron que separarse, porque el `applicationId` no las cubre:
+
+- **La carpeta de `Documents`.** Es del teléfono, no de la app, así que las dos
+  podían escribir en la misma. V2 usa `Documents/PoliceToolsV2/`, de modo que
+  su copia automática no pisa la de la original — que es justo el respaldo que
+  sobrevive a una desinstalación.
+- **El `authority` del FileProvider.** Se declara como
+  `${applicationId}.fileprovider`, así que sale distinto solo. Dos apps con el
+  mismo authority no pueden estar instaladas a la vez: la segunda falla al
+  instalar.
+- **El `id` del manifest de la PWA**, para que instalada desde el navegador
+  también aparezca como un icono aparte.
+
+El workflow comprueba el `applicationId` **dentro del APK compilado** (con
+`aapt dump badging`) antes de publicar nada. Verificarlo solo en el fuente no
+bastaría: lo que instala el teléfono es el binario, y un APK con el
+`applicationId` equivocado no se descubre hasta tener la app original
+sustituida.
+
+### Los datos no se comparten
+
+Son dos cajones separados: los reportes de la original **no aparecen** en V2.
+Para llevarte el historial, en la original *Ajustes → Backup → Export* y en V2
+*Import*.
+
 ## Instalar en el teléfono
 
-Abre este enlace **desde el propio teléfono**:
+**Police Tools V2** (esta versión, la que recibe las funciones nuevas):
+
+**https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-v2/PoliceToolsV2.apk**
+
+**Police Tools** (la original, congelada):
 
 **https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-latest/PoliceTools.apk**
 
-Es siempre el mismo enlace y siempre apunta a la última compilación: cada push
-lo reemplaza. Android pedirá permiso para instalar desde esta fuente, que es lo
-normal en una app que no viene de Play Store.
+Ábrelos **desde el propio teléfono**. Son siempre los mismos enlaces y cada uno
+apunta a la última compilación de su versión: cada push lo reemplaza. Android
+pedirá permiso para instalar desde esta fuente, que es lo normal en una app que
+no viene de Play Store.
 
 El artefacto de la pestaña *Actions* sigue estando, pero para instalar no
 sirve: viene comprimido en un zip y su descarga exige estar identificado en
@@ -116,6 +166,12 @@ uno **no aparecen** en el otro. Si usas los dos, mueve los datos con
 
 Lo razonable es usar el APK para el trabajo diario y la web solo para
 consultar desde el ordenador.
+
+Ojo con un caso: en el **navegador**, si la original y V2 se sirven del mismo
+origen (mismo dominio y puerto), sí comparten `localStorage` e IndexedDB —
+esos almacenes van por origen, no por carpeta. En el APK nunca pasa, porque
+ahí las separa el `applicationId`. Para tenerlas separadas también en web,
+sírvelas en puertos distintos.
 
 ## Permisos que pide
 

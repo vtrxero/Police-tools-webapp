@@ -1,14 +1,23 @@
-# Police Tools
+# Police Tools V2
 
 Suite de productividad para agentes de policía. PWA sin build step: HTML, CSS y
 JavaScript vanilla que se sirven como archivos estáticos.
 
+Esta rama es **V2**, una aplicación aparte de la original: otro
+`applicationId`, otro icono y su propia numeración desde 1.0. Las dos se
+instalan a la vez en el mismo teléfono y no comparten datos. La original sigue
+publicada y funcionando; las funciones nuevas entran aquí. El plan está en
+[ROADMAP.md](ROADMAP.md) y el detalle de la separación en
+[ANDROID.md](ANDROID.md).
+
 ## Uso
 
 **Android:** abre desde el teléfono
-[**PoliceTools.apk**](https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-latest/PoliceTools.apk).
-Es siempre el mismo enlace y apunta a la última compilación. Ver
-[ANDROID.md](ANDROID.md).
+[**PoliceToolsV2.apk**](https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-v2/PoliceToolsV2.apk)
+(V2) o
+[**PoliceTools.apk**](https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-latest/PoliceTools.apk)
+(la original). Son siempre los mismos enlaces y cada uno apunta a la última
+compilación de su versión. Ver [ANDROID.md](ANDROID.md).
 
 **Web:**
 
@@ -39,6 +48,7 @@ Todo se guarda en `localStorage`. No hay backend ni salida de datos del disposit
 
 ```
 index.html              UI completa
+js/edition.js           quien es esta copia (original o V2)
 css/styles.css          estilos base
 css/themes.css          8 paletas + selector
 css/mobile.css          capa de optimización móvil

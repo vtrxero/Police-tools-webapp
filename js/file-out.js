@@ -26,8 +26,12 @@
     'use strict';
 
     const MIME = 'application/pdf';
-    // Subcarpeta propia: los PDFs no se mezclan con el resto de Documentos
-    const CARPETA = 'PoliceTools';
+    // Subcarpeta propia: los PDFs no se mezclan con el resto de Documentos.
+    //
+    // Sale de js/edition.js porque la original y V2 pueden estar instaladas a
+    // la vez: Documents es del telefono, no de la app, y con el mismo nombre
+    // de carpeta cada una sobreescribiria los ficheros de la otra.
+    const CARPETA = window.PTEdition?.carpeta || 'PoliceTools';
 
     function cap() {
         return window.Capacitor;

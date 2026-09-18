@@ -10,9 +10,9 @@
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-    <meta name="apple-mobile-web-app-title" content="Police Tools"/>
+    <meta name="apple-mobile-web-app-title" content="Police Tools V2"/>
     <meta name="format-detection" content="telephone=no"/>
-    <title>Police Tools - Law Enforcement Productivity Suite</title>
+    <title>Police Tools V2 - Law Enforcement Productivity Suite</title>
     <link rel="stylesheet" href="css/styles.css"/>
     <link rel="stylesheet" href="css/themes.css"/>
     <link rel="stylesheet" href="css/mobile.css"/>
@@ -25,6 +25,9 @@
     <link rel="icon" type="image/png" sizes="96x96" href="assets/icon-96x96.png"/>
     <!-- El tema se aplica antes de pintar el body: si se cargara al final,
          se veria un destello con los colores del tema anterior. -->
+    <!-- Quien es esta copia (original o V2). Va primero: file-out.js y
+         data-io.js le preguntan la carpeta donde escribir. -->
+    <script src="js/edition.js"></script>
     <script src="js/themes.js"></script>
     <!-- Librerias servidas localmente: la app debe funcionar sin red -->
     <script src="vendor/pdf-lib.min.js"></script>
@@ -57,7 +60,7 @@
                     </svg>
                 </div>
                 <div class="brand">
-                    <h1>Police Tools</h1>
+                    <h1>Police Tools <span class="edition-tag">V2</span></h1>
                     <span>Law Enforcement Suite</span>
                 </div>
             </div>
@@ -233,7 +236,7 @@
 
             <!-- Footer -->
             <footer class="app-footer">
-                <p>Police Tools v2.0 - Law Enforcement Productivity Suite</p>
+                <p id="footer-edition">Police Tools V2 - Law Enforcement Productivity Suite</p>
             </footer>
         </main>
 
@@ -2069,7 +2072,7 @@
 
                 <div class="form-section">
                     <h3>About</h3>
-                    <p class="about-text">Police Tools v1.0</p>
+                    <p class="about-text" id="about-edition">Police Tools V2</p>
                     <p class="about-text">Law Enforcement Productivity Suite</p>
                     <p class="about-text">Built for officers, by officers.</p>
                 </div>

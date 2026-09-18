@@ -5,10 +5,22 @@ apply plugin: 'com.android.application'
 def ptVersionCode = (System.getenv("PT_VERSION_CODE") ?: "3") as Integer
 
 android {
+    // El namespace sigue siendo el original: es el paquete Java de
+    // MainActivity y MailOut, y cambiarlo obligaria a mover los .java sin
+    // ganar nada. Lo que separa las dos apps es el applicationId.
     namespace "mil.buchanan.policetools"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "mil.buchanan.policetools"
+        // V2 es una aplicacion distinta, no una actualizacion de la original.
+        //
+        // Android identifica una app por su applicationId: con el mismo, el
+        // APK de V2 se instalaria ENCIMA de la original y la sustituiria.
+        // Con el sufijo .v2 son dos entradas separadas en el lanzador, con
+        // almacenamiento separado, y la original sigue instalada e intacta.
+        //
+        // El FileProvider se declara como ${applicationId}.fileprovider, asi
+        // que su authority tampoco choca entre las dos.
+        applicationId "mil.buchanan.policetools.v2"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // El numero de version sale del historial de git, asi que cada
@@ -22,7 +34,10 @@ android {
         // primero y aplica .toInteger() al valor que devuelve —que es null—,
         // asi que la compilacion moria con "Value is null".
         versionCode ptVersionCode
-        versionName System.getenv("PT_VERSION_NAME") ?: "2.7.0"
+        // V2 arranca su propia numeracion en 1.0. El versionCode sigue
+        // saliendo del recuento de commits (solo crece), pero el nombre que
+        // se le ensena al usuario no hereda el 2.7 de la original.
+        versionName System.getenv("PT_VERSION_NAME") ?: "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

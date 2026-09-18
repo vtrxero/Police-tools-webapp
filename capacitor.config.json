@@ -1,6 +1,6 @@
 {
-  "appId": "mil.buchanan.policetools",
-  "appName": "Police Tools",
+  "appId": "mil.buchanan.policetools.v2",
+  "appName": "Police Tools V2",
   "webDir": "www",
   "android": {
     "allowMixedContent": false,

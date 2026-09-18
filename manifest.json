@@ -1,7 +1,7 @@
 {
-  "name": "Police Tools - Law Enforcement Productivity Suite",
-  "short_name": "Police Tools",
-  "description": "Mobile-first productivity suite for law enforcement officers with PDF form generation",
+  "name": "Police Tools V2 - Law Enforcement Productivity Suite",
+  "short_name": "Police Tools V2",
+  "description": "Mobile-first productivity suite for law enforcement officers with PDF form generation (V2)",
   "start_url": "./index.html",
   "display": "standalone",
   "display_override": [
@@ -12,7 +12,7 @@
   "theme_color": "#1e40af",
   "orientation": "portrait",
   "scope": "./",
-  "id": "police-tools-app",
+  "id": "police-tools-v2-app",
   "categories": [
     "productivity",
     "utilities"

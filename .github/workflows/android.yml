@@ -5,16 +5,22 @@
 # (dl.google.com esta bloqueado por politica de red), pero los runners de
 # GitHub ya lo traen instalado, asi que el APK se compila aqui.
 #
-# Y se publica en una release con la etiqueta fija 'apk-latest', que da un
-# enlace directo y siempre el mismo:
+# Esta rama compila **Police Tools V2**, que es una aplicacion distinta de la
+# original y no una actualizacion suya: otro applicationId
+# (mil.buchanan.policetools.v2), otro nombre en el lanzador y su propia
+# numeracion desde 1.0. Las dos se instalan a la vez.
 #
-#   https://github.com/vtrxero/Police-tools-webapp/releases/download/apk-latest/PoliceTools.apk
+# Por eso publica en su propia etiqueta, 'apk-v2', y NO toca 'apk-latest':
+# esa release guarda el APK de la original y tiene que seguir descargable.
+#
+#   V2:        .../releases/download/apk-v2/PoliceToolsV2.apk
+#   original:  .../releases/download/apk-latest/PoliceTools.apk
 #
 # El artefacto de Actions no sirve para instalar desde el telefono: viene
 # comprimido en un zip y su descarga exige estar identificado en GitHub. Se
 # mantiene de todas formas, que para revisar una compilacion vieja va bien.
 # ============================================
-name: Android APK
+name: Android APK (V2)
 
 on:
   push:
@@ -77,6 +83,7 @@ jobs:
           A=android/app/src/main/assets/public
           for f in index.html js/app.js js/lock.js js/pdf-generator.js \
                    js/file-out.js js/pdf-view.js js/prefill.js js/drafts.js \
+                   js/edition.js \
                    css/styles.css vendor/pdf-lib.min.js \
                    vendor/pdf.min.mjs vendor/pdf.worker.min.mjs \
                    vendor/pdfjs-fonts/LiberationSans-Regular.ttf \
@@ -106,17 +113,33 @@ jobs:
       - name: Numero de version
         run: |
           N=$(git rev-list --count HEAD)
-          # Todos los APK publicados hasta ahora declaraban versionCode 3. Si
-          # el recuento saliera por debajo —un clon somero, un historial
-          # reescrito— Android rechazaria la instalacion por ser una version
-          # anterior. Mejor parar aqui que publicar un APK que no entra.
+          # Si el recuento saliera por debajo del ya publicado —un clon
+          # somero, un historial reescrito— Android rechazaria la instalacion
+          # por ser una version anterior. El 4 es el suelo que dejo la
+          # original; V2 parte del mismo historial, asi que sirve igual.
           if [ "$N" -lt 4 ]; then
             echo "El recuento de commits da $N, menor que el 3 ya publicado."
             echo "Probablemente el checkout es somero (falta fetch-depth: 0)."
             exit 1
           fi
           echo "PT_VERSION_CODE=$N" >> $GITHUB_ENV
-          echo "PT_VERSION_NAME=2.7.$N" >> $GITHUB_ENV
+          # V2 lleva su propia numeracion: no hereda el 2.7 de la original.
+          echo "PT_VERSION_NAME=1.0.$N" >> $GITHUB_ENV
+
+      # La red de seguridad de todo este montaje.
+      #
+      # Si el APK saliera con el applicationId de la original, instalarlo en
+      # el telefono SUSTITUIRIA la app original en vez de ponerse al lado, y
+      # eso no se descubre hasta tener las dos desaparecidas en una. Se
+      # comprueba antes de publicar nada.
+      - name: Verificar que el APK es el de V2
+        run: |
+          grep -q 'applicationId "mil.buchanan.policetools.v2"' android/app/build.gradle \
+            || { echo "build.gradle no declara el applicationId de V2"; exit 1; }
+          grep -q '<string name="app_name">Police Tools V2</string>' \
+            android/app/src/main/res/values/strings.xml \
+            || { echo "strings.xml no declara el nombre de V2"; exit 1; }
+          echo "Identidad de V2 correcta"
 
       - name: Compilar debug
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
@@ -153,39 +176,58 @@ jobs:
           fi
           echo "versionCode $EN_APK correcto"
 
+          # El applicationId que acabo dentro del APK. Comprobarlo en el
+          # fuente no basta: lo que instala el telefono es esto.
+          PAQUETE=$(echo "$SALIDA" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p")
+          echo "package: $PAQUETE"
+          if [ "$PAQUETE" != "mil.buchanan.policetools.v2" ]; then
+            echo "El APK se instalaria como '$PAQUETE' y sustituiria a la app original"
+            exit 1
+          fi
+
       - name: Renombrar
         run: |
           mkdir -p out
           cp android/app/build/outputs/apk/debug/app-debug.apk \
-             "out/PoliceTools-debug-$(git rev-parse --short HEAD).apk"
+             "out/PoliceToolsV2-debug-$(git rev-parse --short HEAD).apk"
           ls -lh out/
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
-          name: PoliceTools-debug-apk
+          name: PoliceToolsV2-debug-apk
           path: out/*.apk
           retention-days: 60
 
       # El APK que se instala en el telefono, con enlace fijo. La etiqueta se
       # reutiliza a proposito: asi el enlace de descarga no cambia nunca y no
       # hay que buscar cual es la ultima version.
+      #
+      # Es 'apk-v2', no 'apk-latest'. La otra sigue siendo la de la app
+      # original y no se toca desde aqui.
       - name: Publicar release descargable
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          cp android/app/build/outputs/apk/debug/app-debug.apk out/PoliceTools.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/PoliceToolsV2.apk
           SHA=$(git rev-parse --short HEAD)
-          TAM=$(du -h out/PoliceTools.apk | cut -f1)
+          TAM=$(du -h out/PoliceToolsV2.apk | cut -f1)
 
           cat > notas.md <<NOTAS
-          APK de Police Tools — compilado de \`$SHA\` ($TAM).
+          APK de **Police Tools V2** — compilado de \`$SHA\` ($TAM).
 
           **Instalar:** abre este enlace desde el telefono y toca
-          \`PoliceTools.apk\`. Android va a pedir permiso para instalar desde
+          \`PoliceToolsV2.apk\`. Android va a pedir permiso para instalar desde
           esta fuente; es normal en una app que no viene de Play Store.
-          Se instala encima de la anterior y **conserva los reportes**.
+
+          V2 es una aplicacion **aparte** de la original: se instala al lado y
+          aparece como *Police Tools V2* en el lanzador. La original sigue
+          donde estaba, con sus reportes intactos, y se descarga de la
+          release \`apk-latest\`.
+
+          Los datos NO se comparten entre las dos. Para llevarte el historial
+          a V2: en la original *Ajustes -> Backup -> Export* y en V2 *Import*.
 
           Ultimo cambio: $(git log -1 --pretty=%s)
           NOTAS
@@ -211,19 +253,19 @@ jobs:
           #
           # Ademas van por endpoints distintos (uploads.github.com contra
           # api.github.com), asi que uno puede estar caido y el otro no.
-          if gh release view apk-latest >/dev/null 2>&1; then
-            reintentar gh release upload apk-latest out/PoliceTools.apk --clobber
+          if gh release view apk-v2 >/dev/null 2>&1; then
+            reintentar gh release upload apk-v2 out/PoliceToolsV2.apk --clobber
 
-            reintentar gh release edit apk-latest --notes-file notas.md --target "$GITHUB_SHA" \
+            reintentar gh release edit apk-v2 --notes-file notas.md --target "$GITHUB_SHA" \
               || echo "Aviso: el APK se publico pero no se pudieron actualizar las notas"
           else
-            reintentar gh release create apk-latest out/PoliceTools.apk \
-              --title "Police Tools — ultimo APK" \
+            reintentar gh release create apk-v2 out/PoliceToolsV2.apk \
+              --title "Police Tools V2 — ultimo APK" \
               --notes-file notas.md \
               --target "$GITHUB_SHA"
           fi
 
-          echo "Descarga: https://github.com/$GITHUB_REPOSITORY/releases/download/apk-latest/PoliceTools.apk"
+          echo "Descarga: https://github.com/$GITHUB_REPOSITORY/releases/download/apk-v2/PoliceToolsV2.apk"
 
       # El APK de release necesita una clave de firma. Se guarda en
       # Settings -> Secrets como KEYSTORE_BASE64, y las contraseñas aparte.
@@ -244,7 +286,7 @@ jobs:
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
           cd ..
           cp android/app/build/outputs/apk/release/app-release.apk \
-             "out/PoliceTools-$(git rev-parse --short HEAD).apk"
+             "out/PoliceToolsV2-$(git rev-parse --short HEAD).apk"
 
       - name: Subir APK firmado
         if: github.event.inputs.release == 'true' && env.KEYSTORE_BASE64 != ''
@@ -252,6 +294,6 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
-          name: PoliceTools-release-apk
-          path: out/PoliceTools-*.apk
+          name: PoliceToolsV2-release-apk
+          path: out/PoliceToolsV2-*.apk
           retention-days: 90

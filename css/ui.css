@@ -155,6 +155,22 @@
     opacity: 0.72;
 }
 
+/* Marca de edicion junto al nombre.
+   La original y V2 se instalan a la vez y comparten icono, asi que sin esto
+   no hay forma de saber cual de las dos esta abierta. */
+.brand h1 .edition-tag {
+    display: inline-block;
+    margin-left: 0.3em;
+    padding: 0.05em 0.36em;
+    border: var(--hairline);
+    border-radius: var(--r-sm);
+    font-size: 0.64em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    vertical-align: 0.14em;
+    opacity: 0.8;
+}
+
 /* ============================================
    4. CHIP DE TURNO
    Era una pastilla con degradado y punto luminoso. Se queda en una

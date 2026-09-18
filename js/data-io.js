@@ -157,7 +157,8 @@
 
             const json = JSON.stringify(copia);
             const blob = new Blob([json], { type: 'application/json' });
-            const nombre = `PoliceTools_Backup_${fechaArchivo()}.json`;
+            const nombre = `${window.PTEdition?.prefijoFichero
+                || 'PoliceTools'}_Backup_${fechaArchivo()}.json`;
 
             const mb = blob.size / 1048576;
             const tam = mb >= 1 ? `${mb.toFixed(1)} MB` : `${(blob.size / 1024).toFixed(0)} KB`;
@@ -249,7 +250,7 @@
         },
 
         /**
-         * Copia automatica a Documents/PoliceTools.
+         * Copia automatica a Documents/<carpeta de la edicion>.
          *
          * Es la unica que sobrevive a una desinstalacion. Los reportes y los
          * PDFs viven en el almacenamiento interno de la app, y desinstalar lo
@@ -275,7 +276,8 @@
                 // Nombre fijo: se sobreescribe en vez de acumular un fichero
                 // de 25 MB por cada cambio hasta llenar el telefono.
                 const uri = await window.PTOut.guardarEnDocumentos(
-                    blob, 'PoliceTools_AutoBackup.json');
+                    blob, window.PTEdition?.ficheroAutoBackup
+                        || 'PoliceTools_AutoBackup.json');
                 if (!uri) return null;
 
                 guardar(CLAVE_AUTO_FECHA, new Date().toISOString());
@@ -320,7 +322,8 @@
                 const linea = document.createElement('span');
                 linea.className = 'auto-backup';
                 linea.textContent =
-                    `Auto-copy in Documents/PoliceTools · ${fa.toLocaleDateString()} ${
+                    `Auto-copy in Documents/${window.PTEdition?.carpeta
+                        || 'PoliceTools'} · ${fa.toLocaleDateString()} ${
                         fa.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
                 el.appendChild(linea);
             }
