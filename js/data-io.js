@@ -31,6 +31,222 @@
     const app = () => window.app;
 
     // ============================================
+    // CIFRADO DE LA COPIA
+    // ============================================
+    /*
+     * La copia lleva nombres de entrevistados, direcciones y MIDs, y es
+     * justo el fichero que sale del telefono: se manda a Drive, al correo o
+     * a un pendrive. Iba en claro, asi que cualquiera que lo tuviera lo
+     * abria con un editor de texto. La app se molesta en pedir un PIN para
+     * ver esos mismos datos en pantalla.
+     *
+     * AES-GCM con clave derivada de una frase por PBKDF2, las mismas 210.000
+     * iteraciones que usa el PIN en js/lock.js. GCM y no CBC porque trae
+     * autenticacion: un fichero manipulado falla al descifrar en vez de
+     * devolver basura que luego se escribiria en localStorage.
+     *
+     * La frase NO se guarda en ninguna parte. Si se pierde, la copia no se
+     * recupera — de ahi que el aviso al exportar sea explicito.
+     *
+     * La copia automatica de Documents sigue en claro, y es deliberado: para
+     * cifrarla sola habria que dejar la frase guardada en el mismo
+     * dispositivo donde esta el fichero, lo que no protege de nada. Esa copia
+     * existe para sobrevivir a una desinstalacion, y cifrarla con una frase
+     * que se pueda olvidar convertiria la ultima red de seguridad en un
+     * fichero inservible. Ver ANDROID.md.
+     */
+    const FORMATO_CLARO = 'police-tools-backup';
+    const FORMATO_CIFRADO = 'police-tools-backup-encrypted';
+    const ITERACIONES = 210000;
+    const MIN_FRASE = 8;
+
+    function aB64(bytes) {
+        let s = '';
+        const b = new Uint8Array(bytes);
+        // De a trozos: con un array de megabytes, String.fromCharCode(...b)
+        // desborda la pila de argumentos.
+        for (let i = 0; i < b.length; i += 8192) {
+            s += String.fromCharCode.apply(null, b.subarray(i, i + 8192));
+        }
+        return btoa(s);
+    }
+
+    function deB64(texto) {
+        const s = atob(texto);
+        const b = new Uint8Array(s.length);
+        for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+        return b;
+    }
+
+    async function derivarClave(frase, sal, iteraciones = ITERACIONES) {
+        const base = await crypto.subtle.importKey(
+            'raw', new TextEncoder().encode(frase), { name: 'PBKDF2' }, false, ['deriveKey']
+        );
+        return await crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt: sal, iterations: iteraciones, hash: 'SHA-256' },
+            base,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+        );
+    }
+
+    /**
+     * Envuelve la copia en un sobre cifrado.
+     *
+     * La cabecera va en claro a proposito: sal, iteraciones y algoritmo hacen
+     * falta para poder descifrar, y no son secretos. Lo que no aparece es la
+     * frase ni nada derivado de ella.
+     */
+    async function cifrarCopia(copia, frase) {
+        const sal = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const clave = await derivarClave(frase, sal);
+
+        const plano = new TextEncoder().encode(JSON.stringify(copia));
+        const cifrado = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, clave, plano);
+
+        return {
+            formato: FORMATO_CIFRADO,
+            version: 1,
+            creado: copia.creado,
+            edicion: window.PTEdition?.firma?.() || 'Police Tools',
+            kdf: { algoritmo: 'PBKDF2-SHA256', iteraciones: ITERACIONES, sal: aB64(sal) },
+            cifra: { algoritmo: 'AES-GCM-256', iv: aB64(iv) },
+            contenido: aB64(cifrado)
+        };
+    }
+
+    async function descifrarCopia(sobre, frase) {
+        const sal = deB64(sobre.kdf?.sal || '');
+        const iv = deB64(sobre.cifra?.iv || '');
+        const clave = await derivarClave(frase, sal, sobre.kdf?.iteraciones || ITERACIONES);
+
+        let plano;
+        try {
+            plano = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv }, clave, deB64(sobre.contenido || ''));
+        } catch (e) {
+            // GCM no distingue frase mala de fichero manipulado: las dos
+            // cosas fallan la autenticacion. Se dice lo probable.
+            throw new Error('Wrong password, or the file is damaged');
+        }
+
+        return JSON.parse(new TextDecoder().decode(plano));
+    }
+
+
+    // ============================================
+    // MODAL DE LA FRASE
+    // ============================================
+    /**
+     * Pide la frase y devuelve { frase } , { claro: true } o null si se
+     * cancela.
+     *
+     * Con un prompt() del navegador bastaria en web, pero en el WebView del
+     * APK los dialogos de JavaScript dependen de que el host los implemente,
+     * y no se puede escribir en ellos con el teclado del sistema de forma
+     * fiable. El modal es de la propia app, asi que se comporta igual en los
+     * dos sitios.
+     */
+    function pedirFrase({ modo = 'exportar' } = {}) {
+        const modal = document.getElementById('backup-pass-modal');
+        if (!modal) return Promise.resolve(null);
+
+        const pass = document.getElementById('bp-pass');
+        const repetir = document.getElementById('bp-repeat');
+        const grupoRepetir = document.getElementById('bp-repeat-group');
+        const error = document.getElementById('bp-error');
+        const titulo = document.getElementById('bp-title');
+        const nota = document.getElementById('bp-note');
+        const btnOk = document.getElementById('bp-ok');
+        const btnClaro = document.getElementById('bp-plain');
+        const btnCancelar = document.getElementById('bp-cancel');
+
+        const importando = modo === 'importar';
+
+        if (titulo) titulo.textContent = importando ? 'Encrypted backup' : 'Protect this backup';
+        if (nota) {
+            nota.textContent = importando
+                ? 'This backup is encrypted. Enter the password it was saved with.'
+                : 'The backup contains names, addresses and MIDs. With a password the '
+                  + 'file is unreadable without it \u2014 and unrecoverable if you forget '
+                  + 'it. Nothing stores it.';
+        }
+        if (grupoRepetir) grupoRepetir.hidden = importando;
+        if (btnClaro) btnClaro.hidden = importando;
+        if (btnOk) btnOk.textContent = importando ? 'Decrypt and restore' : 'Encrypt and save';
+        if (pass) pass.value = '';
+        if (repetir) repetir.value = '';
+        if (error) { error.hidden = true; error.textContent = ''; }
+
+        modal.classList.add('active');
+        app()?.abrirCapa?.();
+        setTimeout(() => pass?.focus(), 120);
+
+        return new Promise((resolver) => {
+            function cerrar(resultado) {
+                modal.classList.remove('active');
+                btnOk?.removeEventListener('click', alAceptar);
+                btnClaro?.removeEventListener('click', alClaro);
+                btnCancelar?.removeEventListener('click', alCancelar);
+                modal.removeEventListener('click', alFondo);
+                pass?.removeEventListener('keydown', alEnter);
+                repetir?.removeEventListener('keydown', alEnter);
+                // La frase no se queda en el DOM despues de usarla
+                if (pass) pass.value = '';
+                if (repetir) repetir.value = '';
+                resolver(resultado);
+            }
+
+            function fallar(mensaje) {
+                if (!error) return;
+                error.textContent = mensaje;
+                error.hidden = false;
+            }
+
+            function alAceptar() {
+                const frase = pass?.value || '';
+                if (!importando) {
+                    if (frase.length < MIN_FRASE) {
+                        fallar(`At least ${MIN_FRASE} characters. This one protects `
+                             + 'names and MIDs leaving the device.');
+                        return;
+                    }
+                    if (frase !== (repetir?.value || '')) {
+                        fallar('The two passwords do not match.');
+                        return;
+                    }
+                } else if (!frase) {
+                    fallar('Enter the password.');
+                    return;
+                }
+                cerrar({ frase });
+            }
+
+            function alClaro() {
+                if (!confirm(
+                    'Save the backup unencrypted?\n\n'
+                    + 'It will contain names, addresses and MIDs in plain text, readable '
+                    + 'by anyone who gets the file.'
+                )) return;
+                cerrar({ claro: true });
+            }
+
+            function alCancelar() { cerrar(null); }
+            function alFondo(e) { if (e.target === modal) cerrar(null); }
+            function alEnter(e) { if (e.key === 'Enter') { e.preventDefault(); alAceptar(); } }
+
+            btnOk?.addEventListener('click', alAceptar);
+            btnClaro?.addEventListener('click', alClaro);
+            btnCancelar?.addEventListener('click', alCancelar);
+            modal.addEventListener('click', alFondo);
+            pass?.addEventListener('keydown', alEnter);
+            repetir?.addEventListener('keydown', alEnter);
+        });
+    }
+
+    // ============================================
     // UTILIDADES
     // ============================================
     function leer(clave, porDefecto = '') {
@@ -150,15 +366,37 @@
             return bytes;
         },
 
-        async exportar({ incluirPDFs = true } = {}) {
+        async exportar({ incluirPDFs = true, frase = undefined } = {}) {
+            /*
+             * La frase se pide ANTES de recopilar.
+             *
+             * Recopilar lee todos los PDFs de IndexedDB y los pasa a base64:
+             * son decenas de MB y varios segundos. Preguntando despues, quien
+             * cancelara en el dialogo habria esperado todo ese trabajo para
+             * nada, y con la copia ya montada en memoria.
+             */
+            if (frase === undefined) {
+                const r = await pedirFrase({ modo: 'exportar' });
+                if (!r) return;                       // cancelado
+                frase = r.claro ? null : r.frase;
+            }
+
             app()?.showLoading(true);
             const copia = await this.recopilar({ incluirPDFs });
+
+            let json;
+            if (frase) {
+                // Cifrar 20 MB de base64 no es instantaneo; el overlay de
+                // carga sigue puesto mientras dura.
+                json = JSON.stringify(await cifrarCopia(copia, frase));
+            } else {
+                json = JSON.stringify(copia);
+            }
             app()?.showLoading(false);
 
-            const json = JSON.stringify(copia);
             const blob = new Blob([json], { type: 'application/json' });
-            const nombre = `${window.PTEdition?.prefijoFichero
-                || 'PoliceTools'}_Backup_${fechaArchivo()}.json`;
+            const nombre = `${window.PTEdition?.prefijoFichero || 'PoliceTools'}_Backup_${
+                fechaArchivo()}${frase ? '_encrypted' : ''}.json`;
 
             const mb = blob.size / 1048576;
             const tam = mb >= 1 ? `${mb.toFixed(1)} MB` : `${(blob.size / 1024).toFixed(0)} KB`;
@@ -171,7 +409,10 @@
                 if (window.PTOut.esNativo()) {
                     await window.PTOut.compartir([{ blob, nombre }], {
                         asunto: `Police Tools backup — ${fechaArchivo()}`,
-                        cuerpo: `Backup of Police Tools (${tam}). Keep it somewhere safe.`
+                        cuerpo: `Backup of Police Tools (${tam}). ${frase
+                            ? 'Encrypted: it needs the password to open.'
+                            : 'NOT encrypted: it holds names and MIDs in plain text.'
+                            } Keep it somewhere safe.`
                     });
                 } else {
                     await descargar(blob, nombre);
@@ -183,7 +424,9 @@
             }
 
             guardar(CLAVE_ULTIMA_COPIA, new Date().toISOString());
-            app()?.showToast(`Backup saved (${tam})`, 'success');
+            app()?.showToast(
+                frase ? `Encrypted backup saved (${tam})` : `Backup saved (${tam})`,
+                'success');
             this.actualizarEstado();
         },
 
@@ -194,7 +437,7 @@
          * actuales y lo que no este en la copia se conserva. Reemplazar del
          * todo borraria los reportes creados despues de hacerla.
          */
-        async importar(fichero, { reemplazar = false } = {}) {
+        async importar(fichero, { reemplazar = false, frase = undefined } = {}) {
             const texto = await fichero.text();
 
             let copia;
@@ -204,7 +447,22 @@
                 throw new Error('El archivo no es una copia valida (JSON ilegible)');
             }
 
-            if (copia.formato !== 'police-tools-backup' || !copia.datos) {
+            /*
+             * Una copia cifrada se reconoce por el formato del sobre y se
+             * abre antes de seguir. Las copias en claro de siempre —las que
+             * ya tenga guardadas de la version original— entran igual: el
+             * cifrado se anade, no sustituye al formato anterior.
+             */
+            if (copia.formato === FORMATO_CIFRADO) {
+                if (frase === undefined) {
+                    const r = await pedirFrase({ modo: 'importar' });
+                    if (!r) return null;              // cancelado
+                    frase = r.frase;
+                }
+                copia = await descifrarCopia(copia, frase);
+            }
+
+            if (copia.formato !== FORMATO_CLARO || !copia.datos) {
                 throw new Error('El archivo no es una copia de Police Tools');
             }
 
@@ -321,10 +579,15 @@
                 const fa = new Date(auto);
                 const linea = document.createElement('span');
                 linea.className = 'auto-backup';
+                // Se dice que esa copia va en claro. Es la que sobrevive a
+                // una desinstalacion y por eso no se cifra (haria falta
+                // guardar la frase en el mismo telefono), asi que quien la
+                // tenga tiene los datos: mejor saberlo que suponerlo.
                 linea.textContent =
                     `Auto-copy in Documents/${window.PTEdition?.carpeta
                         || 'PoliceTools'} · ${fa.toLocaleDateString()} ${
-                        fa.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                        fa.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        } · not encrypted`;
                 el.appendChild(linea);
             }
         }
@@ -596,6 +859,9 @@
             app()?.showLoading(true);
             try {
                 const r = await backup.importar(fichero);
+                // null = se cancelo el dialogo de la contrasena. No es un
+                // error y no hay nada restaurado que anunciar.
+                if (!r) return;
                 app()?.showToast(
                     `Restored ${r.restauradas} entries` + (r.pdfs ? ` and ${r.pdfs} PDFs` : ''),
                     'success'

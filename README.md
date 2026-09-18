@@ -89,8 +89,9 @@ base64 y dispone de ~1 GB.
 En `localStorage` queda solo la ficha del reporte. La migración de lo ya
 guardado corre sola al arrancar.
 
-**Haz copias.** Ajustes → Backup exporta un JSON con todo, PDFs incluidos.
-Sin eso, borrar los datos del navegador o reinstalar la PWA pierde el historial.
+**Haz copias.** Ajustes → Backup exporta un JSON con todo, PDFs incluidos, y
+pide una contraseña para cifrarlo. Sin copia, borrar los datos del navegador o
+reinstalar la PWA pierde el historial.
 
 ## Sacar documentos del dispositivo
 
@@ -306,6 +307,34 @@ mal sería peor que el riesgo que evita.
 
 En el APK la copia automática de Android está desactivada: subiría esos datos
 a la cuenta de Google del dispositivo.
+
+### La copia cifrada
+
+El export llevaba esos mismos nombres, direcciones y MIDs **en claro**, y es
+justo el fichero que sale del teléfono: se manda a Drive, al correo o a un
+pendrive. Cualquiera que lo tuviera lo abría con un editor de texto, mientras
+la app pedía un PIN para ver los mismos datos en pantalla.
+
+Ahora se cifra con AES-GCM y clave derivada de una frase por PBKDF2, con las
+mismas 210.000 iteraciones que el PIN. GCM y no CBC porque trae autenticación:
+un fichero manipulado falla al descifrar en vez de devolver basura que luego se
+escribiría en `localStorage`. La sal y el IV son nuevos en cada export.
+
+La frase no se guarda en ninguna parte, así que perderla es perder la copia; el
+aviso lo dice antes de pedirla y hay un botón explícito para guardar sin cifrar.
+Las copias en claro que ya tengas siguen importándose: el cifrado se añade, no
+sustituye al formato anterior.
+
+**La copia automática de `Documents` sigue en claro, y es deliberado.** Para
+cifrarla sola habría que dejar la frase guardada en el mismo dispositivo donde
+está el fichero, lo que no protege de nada. Esa copia existe para sobrevivir a
+una desinstalación, y cifrarla con una frase que se puede olvidar convertiría la
+última red de seguridad en un fichero inservible. El estado del backup lo dice
+con un *not encrypted* al lado de la fecha, para que se sepa y no se suponga.
+
+También se retiró la sección *Data Management* de los ajustes: sus dos botones
+—«Export All Data» y «Clear All Data»— no tenían ningún manejador detrás. El
+primero era el peor de los dos, porque hacía creer que había copia.
 
 ## Funciones
 

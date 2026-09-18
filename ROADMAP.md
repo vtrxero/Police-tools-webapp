@@ -19,12 +19,13 @@ necesita nada de fuera.
       en PDF dibujada con pdf-lib, veredicto calculado contra ±1 mph y aviso
       cuando falta el check de entrada.
 
+- [x] **Backup cifrado.** AES-GCM con clave derivada por PBKDF2 (210.000
+      iteraciones, como el PIN), sal e IV nuevos en cada export, y las copias
+      en claro de antes siguen importándose. La copia automática de `Documents`
+      queda en claro a propósito y la app lo dice.
+
 ## Sin dependencias externas
 
-- [ ] **Backup cifrado.** Hoy el export JSON lleva nombres, direcciones y MIDs
-      en claro, y acaba en Drive o en el correo. AES-GCM con la derivación
-      PBKDF2 que ya usa `js/lock.js`. La importación acepta también los
-      ficheros antiguos sin cifrar.
 - [ ] **Vencimientos de certificaciones.** Cualificación de arma, CPR, Taser,
       ASP, operador de radar, CJIS, físico, licencia. Aviso a 60 y 30 días en
       el inicio.

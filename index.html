@@ -2065,12 +2065,6 @@
                 </div>
 
                 <div class="form-section">
-                    <h3>Data Management</h3>
-                    <button class="btn btn-secondary" id="export-data">Export All Data</button>
-                    <button class="btn btn-secondary" id="clear-data">Clear All Data</button>
-                </div>
-
-                <div class="form-section">
                     <h3>PDF Diagnostics</h3>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
                         Inspect PDF form fields to verify mappings. Results will appear in browser console (F12).
@@ -2537,6 +2531,42 @@
         </section>
 
         <!-- PDF Preview Modal -->
+        <!-- ============================================
+             CONTRASENA DE LA COPIA
+             La copia lleva nombres, direcciones y MIDs, y es el fichero que
+             sale del telefono. Ver el cifrado en js/data-io.js.
+             ============================================ -->
+        <div class="modal" id="backup-pass-modal">
+            <div class="modal-content backup-pass">
+                <div class="modal-header">
+                    <h3 id="bp-title">Protect this backup</h3>
+                    <button class="close-btn" id="bp-cancel" aria-label="Cancel">X</button>
+                </div>
+                <div class="modal-body">
+                    <p class="section-note" id="bp-note">
+                        The backup contains names, addresses and MIDs. With a password
+                        the file is unreadable without it — and unrecoverable if you
+                        forget it. Nothing stores it.
+                    </p>
+                    <div class="form-group">
+                        <label for="bp-pass">Password</label>
+                        <input type="password" id="bp-pass" autocomplete="new-password"
+                               autocapitalize="none" autocorrect="off" spellcheck="false"/>
+                    </div>
+                    <div class="form-group" id="bp-repeat-group">
+                        <label for="bp-repeat">Repeat password</label>
+                        <input type="password" id="bp-repeat" autocomplete="new-password"
+                               autocapitalize="none" autocorrect="off" spellcheck="false"/>
+                    </div>
+                    <p class="bp-error" id="bp-error" hidden></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="bp-plain">Save without password</button>
+                    <button class="btn btn-primary" id="bp-ok">Encrypt and save</button>
+                </div>
+            </div>
+        </div>
+
         <div class="modal" id="pdf-preview-modal">
             <div class="modal-content">
                 <div class="modal-header">

@@ -4390,3 +4390,22 @@ body {
     /* 44px de objetivo tactil como el resto de la app */
     min-height: 44px;
 }
+
+/* ============================================
+   CONTRASENA DE LA COPIA
+   Ver el cifrado en js/data-io.js.
+   ============================================ */
+.modal-content.backup-pass {
+    max-width: 420px;
+}
+
+.bp-error {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-left: 3px solid var(--accent-red);
+    border-radius: var(--radius-sm, 8px);
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-red);
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
