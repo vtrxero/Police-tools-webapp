@@ -1808,3 +1808,8 @@ body.keyboard-open .bottom-nav {
     line-height: 1;
     cursor: pointer;
 }
+
+.si-ic.radar {
+    background: rgba(6, 182, 212, 0.16);
+    color: var(--accent-cyan);
+}

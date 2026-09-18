@@ -11,7 +11,7 @@
  *   - Plantillas PDF: cache-first (son pesadas y no cambian).
  */
 
-const VERSION = 'v2.7.0';
+const VERSION = 'v2-1.0.0';
 const SHELL_CACHE = `police-tools-shell-${VERSION}`;
 const PDF_CACHE = `police-tools-pdf-${VERSION}`;
 const RUNTIME_CACHE = `police-tools-runtime-${VERSION}`;
@@ -31,6 +31,7 @@ const SHELL_ASSETS = [
     './assets/hero/skyline-violet.webp',
     './assets/hero/skyline-sunset.webp',
     './js/app.js',
+    './js/edition.js',
     './js/file-out.js',
     './js/pdf-view.js',
     './js/mobile.js',
@@ -47,6 +48,7 @@ const SHELL_ASSETS = [
     './js/photos.js',
     './js/citations.js',
     './js/shift-tools.js',
+    './js/radar-log.js',
     './js/month-summary.js',
     './js/lock.js',
     './js/law-library-data.js',

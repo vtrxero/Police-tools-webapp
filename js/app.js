@@ -256,6 +256,17 @@ class PoliceToolsApp {
             case 'pmcs':
                 payload = this.collectFormData('pmcs-form');
                 break;
+
+            // El log de radar no es un formulario que se rellene de una vez:
+            // son los checks que se fueron anotando durante el turno. La
+            // cabecera sale del formulario y los checks de js/radar-log.js,
+            // igual que las misiones del Patrol Log salen de savedEntries.
+            case 'radar':
+                payload = {
+                    ...this.collectFormData('radar-form'),
+                    checks: window.PTRadar?.delDia?.() || []
+                };
+                break;
         }
 
         /*
@@ -1417,7 +1428,7 @@ class PoliceToolsApp {
 
     // Tipos que tienen límite de 1 por día
     getLimitedTypes() {
-        return ['pmcs', 'patrol', 'guardmount'];
+        return ['pmcs', 'patrol', 'guardmount', 'radar'];
     }
 
     // Verificar si ya existe un documento del mismo tipo en la misma fecha
@@ -1492,7 +1503,11 @@ class PoliceToolsApp {
             interview: ['last_name', 'first_name'],
             pmcs: [],
             patrol: [],
-            guardmount: []
+            guardmount: [],
+            // La hoja del dia se rehace cada vez que se anota un check, asi
+            // que la nueva reemplaza a la anterior en vez de acumular una
+            // ficha por pasada.
+            radar: []
         };
     }
 
@@ -1627,7 +1642,8 @@ class PoliceToolsApp {
             patrol: 'Patrol Log',
             guardmount: 'Guard Mount',
             interview: 'Interview Worksheet',
-            pmcs: 'PMCS Inspection'
+            pmcs: 'PMCS Inspection',
+            radar: 'Radar / Lidar Check Log'
         };
         return titles[type] || type;
     }
@@ -1822,7 +1838,8 @@ class PoliceToolsApp {
             patrol: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
             guardmount: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
             interview: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
-            pmcs: '<path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>'
+            pmcs: '<path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>',
+            radar: '<path d="M12 12 3 8.5"/><circle cx="12" cy="12" r="2"/><path d="M12 3a9 9 0 0 1 9 9"/><path d="M12 7a5 5 0 0 1 5 5"/><path d="M4 20h16"/>'
         };
         return icons[type] || icons.patrol;
     }

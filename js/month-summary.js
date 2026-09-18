@@ -162,7 +162,10 @@
             d.enfermo ? `${num(d.enfermo)} h sick` : ''
         ].filter(Boolean);
 
-        const nombres = { patrol: 'Patrol Log', pmcs: 'PMCS', guardmount: 'Guard Mount', interview: 'Interview' };
+        const nombres = {
+            patrol: 'Patrol Log', pmcs: 'PMCS', guardmount: 'Guard Mount',
+            interview: 'Interview', radar: 'Radar Log'
+        };
         const porTipo = Object.entries(d.porTipo)
             .map(([t, n]) => `${n} ${nombres[t] || t}`).join(' · ');
 

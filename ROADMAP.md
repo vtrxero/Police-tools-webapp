@@ -14,12 +14,13 @@ necesita nada de fuera.
       release `apk-v2`, carpeta `Documents/PoliceToolsV2/`. El workflow
       verifica el `applicationId` dentro del APK compilado antes de publicar.
 
+- [x] **Log de calibración de radar/lidar.** Check al abrir y cerrar turno
+      —autotest, display/audio, diapasones con valor grabado y obtenido—, hoja
+      en PDF dibujada con pdf-lib, veredicto calculado contra ±1 mph y aviso
+      cuando falta el check de entrada.
+
 ## Sin dependencias externas
 
-- [ ] **Log de calibración de radar/lidar.** Check de tuning fork al abrir y
-      cerrar turno: serie del equipo, valores esperado/obtenido, hora, oficial.
-      Sin ese registro la citación se cae en corte. No hay formulario oficial,
-      así que el PDF se dibuja con pdf-lib.
 - [ ] **Backup cifrado.** Hoy el export JSON lleva nombres, direcciones y MIDs
       en claro, y acaba en Drive o en el correo. AES-GCM con la derivación
       PBKDF2 que ya usa `js/lock.js`. La importación acepta también los

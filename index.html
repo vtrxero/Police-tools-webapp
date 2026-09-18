@@ -232,6 +232,20 @@
                     <h3>PMCS</h3>
                     <p>Vehicle Inspection</p>
                 </div>
+
+                <div class="menu-card" data-tab="radar">
+                    <div class="card-icon radar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 12 3 8.5"></path>
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <path d="M12 3a9 9 0 0 1 9 9"></path>
+                            <path d="M12 7a5 5 0 0 1 5 5"></path>
+                            <path d="M4 20h16"></path>
+                        </svg>
+                    </div>
+                    <h3>Radar Check</h3>
+                    <p>Accuracy Log</p>
+                </div>
             </section>
 
             <!-- Footer -->
@@ -327,6 +341,21 @@
                             </svg>
                         </span>
                         <span class="si-text"><b>PMCS</b><em>Vehicle inspection</em></span>
+                        <svg class="si-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="m9 18 6-6-6-6"></path>
+                        </svg>
+                    </button>
+                    <button class="sheet-item" data-new="radar">
+                        <span class="si-ic radar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M12 12 3 8.5"></path>
+                                <circle cx="12" cy="12" r="2"></circle>
+                                <path d="M12 3a9 9 0 0 1 9 9"></path>
+                                <path d="M12 7a5 5 0 0 1 5 5"></path>
+                                <path d="M4 20h16"></path>
+                            </svg>
+                        </span>
+                        <span class="si-text"><b>Radar Check</b><em>Accuracy check before the citation</em></span>
                         <svg class="si-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path d="m9 18 6-6-6-6"></path>
                         </svg>
@@ -2251,6 +2280,206 @@
         </section>
 
         <!-- Personal Journal View -->
+        <!-- ============================================
+             RADAR / LIDAR ACCURACY CHECK
+             El check de tuning fork al abrir y cerrar el turno es lo que
+             sostiene la lectura en corte. Ver js/radar-log.js.
+             ============================================ -->
+        <section class="tab-view" id="radar-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Radar / Lidar Check</h2>
+            </header>
+
+            <div class="view-content">
+                <div class="radar-warning" id="radar-missing" hidden>
+                    <b>No start-of-shift check logged.</b>
+                    <span>A speed reading without an accuracy check on record has
+                          nothing backing it up in court.</span>
+                </div>
+
+                <form id="radar-form" onsubmit="return false;">
+                    <div class="form-section">
+                        <h3>Device</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="radar_tipo">Type</label>
+                                <select id="radar_tipo" name="device_type">
+                                    <option value="radar">Radar</option>
+                                    <option value="lidar">Lidar</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="radar_momento">Check point</label>
+                                <select id="radar_momento" name="check_point">
+                                    <option value="start">Start of shift</option>
+                                    <option value="end">End of shift</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="radar_marca">Make / model</label>
+                                <input type="text" id="radar_marca" name="device_make"
+                                       placeholder="Stalker DSR 2X" />
+                            </div>
+                            <div class="form-group">
+                                <label for="radar_serie">Serial number</label>
+                                <input type="text" id="radar_serie" name="device_serial"
+                                       placeholder="S/N" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="radar_fecha">Date</label>
+                                <input type="date" id="radar_fecha" name="date" />
+                            </div>
+                            <div class="form-group">
+                                <label for="radar_hora">Time</label>
+                                <input type="time" id="radar_hora" name="time" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Tests</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="radar_autotest">Internal self-test</label>
+                                <select id="radar_autotest" name="self_test">
+                                    <option value="">—</option>
+                                    <option value="pass">Pass</option>
+                                    <option value="fail">Fail</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="radar_display">Display / audio</label>
+                                <select id="radar_display" name="display_audio">
+                                    <option value="">—</option>
+                                    <option value="pass">Pass</option>
+                                    <option value="fail">Fail</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Radar: diapasones -->
+                        <div id="radar-bloque-forks">
+                            <p class="help-text">Tuning forks: the reading has to come
+                               back at the value stamped on the fork.</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="radar_fork1_esp">Fork 1 stamped (mph)</label>
+                                    <input type="number" inputmode="numeric" id="radar_fork1_esp"
+                                           name="fork1_stamped" placeholder="35" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="radar_fork1_obt">Fork 1 read (mph)</label>
+                                    <input type="number" inputmode="numeric" id="radar_fork1_obt"
+                                           name="fork1_read" placeholder="35" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="radar_fork2_esp">Fork 2 stamped (mph)</label>
+                                    <input type="number" inputmode="numeric" id="radar_fork2_esp"
+                                           name="fork2_stamped" placeholder="65" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="radar_fork2_obt">Fork 2 read (mph)</label>
+                                    <input type="number" inputmode="numeric" id="radar_fork2_obt"
+                                           name="fork2_read" placeholder="65" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="radar_ambos">Both forks simultaneously</label>
+                                <select id="radar_ambos" name="both_forks">
+                                    <option value="">—</option>
+                                    <option value="pass">Pass</option>
+                                    <option value="fail">Fail</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Lidar: distancia fija y alineacion -->
+                        <div id="radar-bloque-lidar" hidden>
+                            <p class="help-text">Fixed-distance check and scope alignment
+                               against the measured reference.</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="radar_dist_esp">Reference (ft)</label>
+                                    <input type="number" inputmode="numeric" id="radar_dist_esp"
+                                           name="ref_distance" placeholder="100" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="radar_dist_obt">Reading (ft)</label>
+                                    <input type="number" inputmode="numeric" id="radar_dist_obt"
+                                           name="read_distance" placeholder="100" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="radar_alineacion">Scope alignment</label>
+                                <select id="radar_alineacion" name="scope_alignment">
+                                    <option value="">—</option>
+                                    <option value="pass">Pass</option>
+                                    <option value="fail">Fail</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="radar_velocimetro">Speedometer comparison (optional)</label>
+                            <input type="text" id="radar_velocimetro" name="speedometer"
+                                   placeholder="Patrol 45 / radar 45" />
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Officer</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="radar_oficial">Name</label>
+                                <input type="text" id="radar_oficial" name="officer" />
+                            </div>
+                            <div class="form-group">
+                                <label for="radar_patrulla">Patrol / unit</label>
+                                <input type="text" id="radar_patrulla" name="patrol" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="radar_notas">Notes</label>
+                            <textarea id="radar_notas" name="notes" rows="2"
+                                      placeholder="Conditions, fork serials, anything worth the record"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-primary" id="save-radar-check">
+                            Log check
+                        </button>
+                    </div>
+                </form>
+
+                <div class="form-section">
+                    <h3>Today's checks</h3>
+                    <div id="radar-list"></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Generate log sheet</h3>
+                    <p class="help-text">A PDF with every check logged for the working day.
+                       Saved to Daily Reports like any other document.</p>
+                    <button type="button" class="btn btn-primary" id="generate-radar-log">
+                        Generate log sheet
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <section class="tab-view" id="journal-view">
             <header class="view-header">
                 <button class="back-btn">
@@ -2357,6 +2586,7 @@
     <script src="js/citations.js"></script>
     <!-- Despues de home.js: usan turnoDeHoy para saber que turno toca -->
     <script src="js/shift-tools.js"></script>
+    <script src="js/radar-log.js"></script>
     <script src="js/month-summary.js"></script>
     <script src="js/lock.js"></script>
     <script src="js/navigation.js"></script>

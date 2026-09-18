@@ -41,6 +41,7 @@ plantillas PDF requieren un origen real.
 | **Law Library** | 761 códigos bilingües EN/ES: tránsito de Ft. Buchanan (9 L.P.R.A.) y penal federal (U.S.C.) |
 | **Daily Reports** | Documentos generados, con filtro por fecha y compartir múltiple |
 | **Panama Schedule** | Calendario de turnos 2-2-3 con editor de patrón |
+| **Radar Check** | Log de precisión del radar/lidar: tuning fork al abrir y cerrar turno |
 
 Todo se guarda en `localStorage`. No hay backend ni salida de datos del dispositivo.
 
@@ -64,6 +65,7 @@ js/home.js              estado del turno en el inicio
 js/form-progress.js     secciones, progreso y prellenado
 js/citations.js         citaciones del turno y buscador global
 js/shift-tools.js       prellenado por turno, continuación y plantillas
+js/radar-log.js         checks de precisión del radar y su hoja
 js/month-summary.js     resumen del mes
 js/pdf-generator.js     relleno de AcroForms con pdf-lib
 js/pdf-mappings.js      mapeo campo UI -> campo PDF
@@ -187,6 +189,31 @@ El resumen del mes separa las dos cosas: lo que pase de 12 horas en un mismo
 turno cuenta como extra, así que tres turnos de 13 salen como 36 h regulares y
 3 h de overtime. Un turno marcado explícitamente como *overtime* cuenta
 entero.
+
+## Log de radar
+
+El check de precisión es lo que sostiene la lectura en corte: sin constancia
+de que el equipo estaba dentro de tolerancia cuando se midió, la lectura no
+tiene nada detrás. La app registraba la citación pero no el check.
+
+Se anota al abrir y al cerrar el turno —autotest, display y audio, y los
+diapasones, con el valor grabado y el obtenido— y la hoja sale en PDF con todo
+lo del día. El veredicto se **calcula**, no se teclea: con una tolerancia de
+±1 mph, un diapasón de 35 que lee 38 sale marcado *OUT OF TOLERANCE* y genera
+un aviso. Poder marcar «pass» con esa lectura delante sería justo lo que la
+hoja tiene que servir para demostrar que no pasó.
+
+Es el único documento que **no** sale de una plantilla oficial: no existe un
+formulario DA/DD para esto, así que la hoja se dibuja con pdf-lib. El resto
+del camino es el mismo que los demás —queda en Daily Reports, entra en el
+backup y cuenta en el resumen del mes—, y el veredicto se alinea al margen
+midiendo el ancho del texto, porque colocado a ojo *OUT OF TOLERANCE* se
+salía de la caja.
+
+Si ya hay check de entrada, el formulario propone el de salida; la marca y la
+serie del equipo se conservan y solo se limpia la lectura, que es lo que
+cambia en cada check. Teclear la serie del radar dos veces por turno es lo que
+hace que un registro así se deje de llevar.
 
 ## Temas
 
