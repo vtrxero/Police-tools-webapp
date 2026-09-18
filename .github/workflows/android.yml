@@ -64,8 +64,23 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # packages: '' es obligatorio aqui.
+      #
+      # Por defecto esta accion instala 'tools platform-tools', y 'tools' es un
+      # paquete que Google retiro de su repositorio. Con las cmdline-tools 16
+      # que traen ahora los runners, sdkmanager sale con codigo 1 y el
+      # workflow moria en este paso —antes de compilar nada— con
+      # "Failed to find package 'tools'". El ultimo build verde fue en agosto,
+      # asi que se rompio al cambiar la imagen del runner, no con un cambio
+      # del proyecto.
+      #
+      # El SDK ya viene en la imagen: de esta accion solo hace falta que deje
+      # ANDROID_HOME puesto y las licencias aceptadas, que es lo que usan
+      # Gradle y el aapt del paso de verificacion.
       - name: SDK de Android
         uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - name: Dependencias
         run: npm ci || npm install
