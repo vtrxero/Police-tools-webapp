@@ -4409,3 +4409,129 @@ body {
     font-size: 0.82rem;
     line-height: 1.4;
 }
+
+/* ============================================
+   VENCIMIENTOS DE CERTIFICACIONES
+   Ver js/certs.js.
+   ============================================ */
+.menu-card[data-tab="certs"] .card-icon {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+    color: var(--accent-purple);
+}
+
+/* Resumen de lo que pide atencion, arriba de la vista */
+.cert-summary {
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    border-left: 3px solid var(--accent-yellow);
+    border-radius: var(--radius-sm, 8px);
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.cert-summary.vencida {
+    border-left-color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.cert-summary b {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+}
+
+.cert-summary span {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    line-height: 1.4;
+}
+
+/* Una certificacion de la lista */
+.cert-item {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color, rgba(148, 163, 184, 0.2));
+    border-left-width: 3px;
+    border-left-color: transparent;
+    border-radius: var(--radius-sm, 8px);
+    background: var(--bg-elevated, rgba(148, 163, 184, 0.05));
+}
+
+/* El estado se ve por el borde antes de leer nada */
+.cert-item.vencida { border-left-color: var(--accent-red); }
+.cert-item.critica { border-left-color: var(--accent-yellow); }
+.cert-item.proxima { border-left-color: var(--accent-cyan); }
+.cert-item.ok      { border-left-color: var(--accent-green); }
+
+.ci-main {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.ci-main b {
+    font-size: 0.9rem;
+}
+
+.ci-state {
+    margin-left: auto;
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cert-item.vencida .ci-state { color: var(--accent-red); }
+.cert-item.critica .ci-state { color: var(--accent-yellow); }
+
+.ci-meta {
+    display: flex;
+    gap: 10px;
+    margin-top: 2px;
+    font-size: 0.76rem;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+}
+
+.ci-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.ci-actions .cert-date {
+    flex: 0 1 170px;
+    /* 16px evita el zoom-al-enfocar de iOS sin bloquear el gesto */
+    font-size: 16px;
+    padding: 6px 8px;
+}
+
+.ci-actions .btn-link {
+    margin-left: auto;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.76rem;
+    text-decoration: underline;
+    cursor: pointer;
+    min-height: 44px;
+}
+
+/* Sugerencias: lo que se lleva en el puesto, para no teclearlo */
+.cert-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.cert-chip {
+    padding: 7px 11px;
+    border: var(--hairline, 1px solid rgba(148, 163, 184, 0.25));
+    border-radius: 999px;
+    background: none;
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.76rem;
+    cursor: pointer;
+    min-height: 34px;
+}

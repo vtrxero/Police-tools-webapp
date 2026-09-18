@@ -24,11 +24,11 @@ necesita nada de fuera.
       en claro de antes siguen importándose. La copia automática de `Documents`
       queda en claro a propósito y la app lo dice.
 
-## Sin dependencias externas
+- [x] **Vencimientos de certificaciones.** Arma, CPR, Taser, ASP, OC, radar,
+      CJIS, físico, licencia y permiso de conductor. Aviso al cruzar los 60 y
+      los 30 días y al vencer, una vez por umbral.
 
-- [ ] **Vencimientos de certificaciones.** Cualificación de arma, CPR, Taser,
-      ASP, operador de radar, CJIS, físico, licencia. Aviso a 60 y 30 días en
-      el inicio.
+## Sin dependencias externas
 - [ ] **Estimado de paga.** El resumen del mes ya sabe el patrón 2-2-3, que el
       turno es de 13 h y cuáles son los feriados. Con eso: night differential,
       Sunday premium, feriado y overtime por separado, para cuadrar contra el

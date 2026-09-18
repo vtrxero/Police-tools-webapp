@@ -42,6 +42,7 @@ plantillas PDF requieren un origen real.
 | **Daily Reports** | Documentos generados, con filtro por fecha y compartir múltiple |
 | **Panama Schedule** | Calendario de turnos 2-2-3 con editor de patrón |
 | **Radar Check** | Log de precisión del radar/lidar: tuning fork al abrir y cerrar turno |
+| **Certifications** | Vencimientos (arma, CPR, Taser, radar, CJIS, físico) con aviso a 60 y 30 días |
 
 Todo se guarda en `localStorage`. No hay backend ni salida de datos del dispositivo.
 
@@ -66,6 +67,7 @@ js/form-progress.js     secciones, progreso y prellenado
 js/citations.js         citaciones del turno y buscador global
 js/shift-tools.js       prellenado por turno, continuación y plantillas
 js/radar-log.js         checks de precisión del radar y su hoja
+js/certs.js             vencimientos de certificaciones
 js/month-summary.js     resumen del mes
 js/pdf-generator.js     relleno de AcroForms con pdf-lib
 js/pdf-mappings.js      mapeo campo UI -> campo PDF
@@ -215,6 +217,23 @@ Si ya hay check de entrada, el formulario propone el de salida; la marca y la
 serie del equipo se conservan y solo se limpia la lectura, que es lo que
 cambia en cada check. Teclear la serie del radar dos veces por turno es lo que
 hace que un registro así se deje de llevar.
+
+## Vencimientos
+
+Cualificación de arma, CPR, Taser, ASP, operador de radar, CJIS, físico y
+licencia se vencen en fechas distintas, no avisa nadie, y una vencida te saca
+de la calle o tumba lo que hiciste con ella.
+
+Se anotan las fechas y la app avisa **al cruzar cada umbral**: a 60 días, a 30
+y cuando vence. Se recuerda el umbral ya avisado, no la fecha del aviso: sacar
+el mismo aviso todos los días desde los 60 hasta el vencimiento son sesenta
+avisos de lo mismo, y eso se ignora entero.
+
+Las fechas se parten a mano en año/mes/día. Con `new Date('2026-11-11')` se
+interpretarían como medianoche UTC, que en Puerto Rico es el día anterior a
+las 20:00, y toda la cuenta de días saldría desplazada uno — el mismo defecto
+que tenía el calendario. La prueba corre con la zona de Puerto Rico y compara
+que hoy dé exactamente 0 días.
 
 ## Temas
 

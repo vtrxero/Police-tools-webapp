@@ -246,6 +246,17 @@
                     <h3>Radar Check</h3>
                     <p>Accuracy Log</p>
                 </div>
+
+                <div class="menu-card" data-tab="certs">
+                    <div class="card-icon certs">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2 4 5v6c0 5 3.4 8.6 8 11 4.6-2.4 8-6 8-11V5z"></path>
+                            <path d="m9 11 2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <h3>Certifications</h3>
+                    <p>Expiry Dates</p>
+                </div>
             </section>
 
             <!-- Footer -->
@@ -2474,6 +2485,52 @@
             </div>
         </section>
 
+        <!-- ============================================
+             VENCIMIENTOS DE CERTIFICACIONES
+             Ver js/certs.js. Avisa a 60 y 30 dias y cuando vence.
+             ============================================ -->
+        <section class="tab-view" id="certs-view">
+            <header class="view-header">
+                <button class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2>Certifications</h2>
+            </header>
+
+            <div class="view-content">
+                <div class="cert-summary" id="cert-summary" hidden></div>
+
+                <div class="form-section">
+                    <h3>Tracked</h3>
+                    <div id="cert-list"></div>
+                    <div class="cert-chips" id="cert-suggestions" hidden></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Add another</h3>
+                    <div class="form-group">
+                        <label for="cert_nombre">Certification</label>
+                        <input type="text" id="cert_nombre" placeholder="Weapons qualification" />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cert_vence">Expires</label>
+                            <input type="date" id="cert_vence" />
+                        </div>
+                        <div class="form-group">
+                            <label for="cert_notas">Note</label>
+                            <input type="text" id="cert_notas" placeholder="Range, card number" />
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-primary" id="add-cert">Add</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="tab-view" id="journal-view">
             <header class="view-header">
                 <button class="back-btn">
@@ -2617,6 +2674,7 @@
     <!-- Despues de home.js: usan turnoDeHoy para saber que turno toca -->
     <script src="js/shift-tools.js"></script>
     <script src="js/radar-log.js"></script>
+    <script src="js/certs.js"></script>
     <script src="js/month-summary.js"></script>
     <script src="js/lock.js"></script>
     <script src="js/navigation.js"></script>

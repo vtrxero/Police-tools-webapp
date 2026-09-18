@@ -49,6 +49,7 @@ const SHELL_ASSETS = [
     './js/citations.js',
     './js/shift-tools.js',
     './js/radar-log.js',
+    './js/certs.js',
     './js/month-summary.js',
     './js/lock.js',
     './js/law-library-data.js',
